@@ -1,11 +1,13 @@
 package com.johnseth97.devflags.screen;
 
-import com.johnseth97.devflags.DebugRendererState;
-import com.johnseth97.devflags.DevFlagDescriptions;
-import com.johnseth97.devflags.DevFlagsConfig;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import com.johnseth97.devflags.DebugRendererState;
+import com.johnseth97.devflags.DevFlagDescriptions;
+import com.johnseth97.devflags.DevFlagsConfig;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -202,7 +204,6 @@ public class DevFlagsConfigScreen extends Screen {
         .build();
 
       button.setTooltip(Tooltip.create(DevFlagDescriptions.get(key)));
-
       addRenderableWidget(button);
     }
 
