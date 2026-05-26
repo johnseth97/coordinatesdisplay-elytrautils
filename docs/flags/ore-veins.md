@@ -2,7 +2,7 @@
 
 **Property:** `MC_DEBUG_ORE_VEINS`
 **Tab:** World Generation
-**Requires restart:** Yes
+**Requires restart:** No
 
 ## Description
 

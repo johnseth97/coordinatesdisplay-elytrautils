@@ -2,7 +2,7 @@
 
 **Property:** `MC_DEBUG_LARGE_DRIPSTONE`
 **Tab:** World Generation
-**Requires restart:** Yes
+**Requires restart:** No
 
 ## Description
 

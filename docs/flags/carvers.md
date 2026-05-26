@@ -2,7 +2,7 @@
 
 **Property:** `MC_DEBUG_CARVERS`
 **Tab:** World Generation
-**Requires restart:** Yes
+**Requires restart:** No
 
 ## Description
 
