@@ -1,7 +1,7 @@
 # Carvers
 
 **Property:** `MC_DEBUG_CARVERS`
-**Tab:** Renderers
+**Tab:** World Generation
 **Requires restart:** Yes
 
 ## Description

@@ -1,7 +1,7 @@
 # Feature Count
 
 **Property:** `MC_DEBUG_FEATURE_COUNT`
-**Tab:** Renderers
+**Tab:** World Generation
 **Requires restart:** Yes
 
 ## Description

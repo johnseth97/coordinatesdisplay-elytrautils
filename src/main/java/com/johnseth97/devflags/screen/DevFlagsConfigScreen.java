@@ -43,12 +43,7 @@ public class DevFlagsConfigScreen extends Screen {
     "MC_DEBUG_ENTITY_BLOCK_INTERSECTION",
     "MC_DEBUG_BLOCK_BREAK",
     "MC_DEBUG_BREEZE_MOB",
-    "MC_DEBUG_SCULK_CATALYST",
-    "MC_DEBUG_LARGE_DRIPSTONE",
-    "MC_DEBUG_CARVERS",
-    "MC_DEBUG_ORE_VEINS",
-    "MC_DEBUG_AQUIFERS",
-    "MC_DEBUG_FEATURE_COUNT"
+    "MC_DEBUG_SCULK_CATALYST"
   );
 
   private static final List<String> GAMEPLAY_FLAGS = Arrays.asList(
@@ -89,7 +84,28 @@ public class DevFlagsConfigScreen extends Screen {
     "MC_DEBUG_SHUFFLE_UI_RENDERING_ORDER",
     "MC_DEBUG_SHUFFLE_MODELS",
     "MC_DEBUG_PREFER_WAYLAND",
-    "MC_DEBUG_DEFAULT_SKIN_OVERRIDE"
+    "MC_DEBUG_DEFAULT_SKIN_OVERRIDE",
+    "MC_DEBUG_DONT_SAVE_WORLD",
+    "MC_DEBUG_CHAT_DISABLED",
+    "MC_DEBUG_FORCE_TELEMETRY"
+  );
+
+  private static final List<String> WORLD_GENERATION_FLAGS = Arrays.asList(
+    "MC_DEBUG_LARGE_DRIPSTONE",
+    "MC_DEBUG_CARVERS",
+    "MC_DEBUG_ORE_VEINS",
+    "MC_DEBUG_AQUIFERS",
+    "MC_DEBUG_FEATURE_COUNT",
+    "MC_DEBUG_DISABLE_LIQUID_SPREADING",
+    "MC_DEBUG_DISABLE_FLUID_GENERATION",
+    "MC_DEBUG_DISABLE_AQUIFERS",
+    "MC_DEBUG_DISABLE_SURFACE",
+    "MC_DEBUG_DISABLE_CARVERS",
+    "MC_DEBUG_DISABLE_STRUCTURES",
+    "MC_DEBUG_DISABLE_FEATURES",
+    "MC_DEBUG_DISABLE_ORE_VEINS",
+    "MC_DEBUG_DISABLE_BLENDING",
+    "MC_DEBUG_DISABLE_BELOW_ZERO_RETROGENERATION"
   );
 
   private static final Map<String, String> DEBUG_RENDERER_KEYS = Map.ofEntries(
@@ -130,6 +146,7 @@ public class DevFlagsConfigScreen extends Screen {
     RENDERERS,
     GAMEPLAY,
     MISC,
+    WORLD_GENERATION,
   }
 
   private Tab currentTab = Tab.RENDERERS;
@@ -160,7 +177,7 @@ public class DevFlagsConfigScreen extends Screen {
     int tabStartX = this.width / 2 - tabsWidth / 2;
 
     Tab[] tabs = Tab.values();
-    String[] tabLabels = { "Renderers", "Gameplay", "Misc" };
+    String[] tabLabels = { "Renderers", "Gameplay", "Misc", "World Gen" };
     for (int i = 0; i < tabs.length; i++) {
       final Tab tab = tabs[i];
       addRenderableWidget(
@@ -253,6 +270,8 @@ public class DevFlagsConfigScreen extends Screen {
         return GAMEPLAY_FLAGS;
       case MISC:
         return MISC_FLAGS;
+      case WORLD_GENERATION:
+        return WORLD_GENERATION_FLAGS;
       default:
         return RENDERERS_FLAGS;
     }

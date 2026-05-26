@@ -19,7 +19,7 @@ Sets `SharedConstants.IS_RUNNING_IN_IDE = true` and `MC_DEBUG_HOTKEYS=true` at c
   - [Renderer Overlays](#renderer-overlays)
   - [Gameplay & QOL](#gameplay--qol)
   - [Misc](#misc)
-  - [Intentionally Disabled](#intentionally-disabled)
+  - [World Generation](#world-generation)
 - [Build](#build)
 
 ---
@@ -162,11 +162,6 @@ Each flag corresponds to a `DebugToggle` property set at startup. Click any flag
 | [`MC_DEBUG_BLOCK_BREAK`](docs/flags/block-break.md) | Block break progress overlay |
 | [`MC_DEBUG_BREEZE_MOB`](docs/flags/breeze-mob.md) | Breeze mob debug overlay |
 | [`MC_DEBUG_SCULK_CATALYST`](docs/flags/sculk-catalyst.md) | Sculk catalyst spread overlay |
-| [`MC_DEBUG_LARGE_DRIPSTONE`](docs/flags/large-dripstone.md) | Large dripstone generation overlay |
-| [`MC_DEBUG_CARVERS`](docs/flags/carvers.md) | Cave carver debug overlay |
-| [`MC_DEBUG_ORE_VEINS`](docs/flags/ore-veins.md) | Ore vein generation overlay |
-| [`MC_DEBUG_AQUIFERS`](docs/flags/aquifers.md) | Aquifer placement overlay |
-| [`MC_DEBUG_FEATURE_COUNT`](docs/flags/feature-count.md) | Feature placement count overlay |
 
 ### Gameplay & QOL
 
@@ -212,26 +207,29 @@ Each flag corresponds to a `DebugToggle` property set at startup. Click any flag
 | [`MC_DEBUG_SHUFFLE_UI_RENDERING_ORDER`](docs/flags/shuffle-ui-rendering-order.md) | Randomize UI element draw order (stress test) |
 | [`MC_DEBUG_RENDER_UI_LAYERING_RECTANGLES`](docs/flags/render-ui-layering-rectangles.md) | Visualize UI layer boundaries |
 | [`MC_DEBUG_NAMED_RUNNABLES`](docs/flags/named-runnables.md) | Attach debug names to scheduled runnables |
+| [`MC_DEBUG_DONT_SAVE_WORLD`](docs/flags/dont-save-world.md) | Suppress all world saves — world reverts on exit |
+| [`MC_DEBUG_CHAT_DISABLED`](docs/flags/chat-disabled.md) | Disable in-game chat entirely |
+| [`MC_DEBUG_FORCE_TELEMETRY`](docs/flags/force-telemetry.md) | Force telemetry submission regardless of opt-out |
 
-### Intentionally Disabled
+### World Generation
 
-These flags exist in the game but are **not** enabled by this mod because they are destructive or disruptive to normal gameplay.
-
-| Property | Why it's off |
+| Flag | Effect |
 |---|---|
-| `MC_DEBUG_DONT_SAVE_WORLD` | World progress is never written to disk |
-| `MC_DEBUG_CHAT_DISABLED` | Disables chat entirely |
-| `MC_DEBUG_FORCE_TELEMETRY` | Forces telemetry submission |
-| `MC_DEBUG_DISABLE_LIQUID_SPREADING` | Liquids freeze in place |
-| `MC_DEBUG_DISABLE_FLUID_GENERATION` | No fluid generation during world gen |
-| `MC_DEBUG_DISABLE_AQUIFERS` | Aquifers skipped during world gen |
-| `MC_DEBUG_DISABLE_SURFACE` | Surface pass skipped during world gen |
-| `MC_DEBUG_DISABLE_CARVERS` | Cave carvers skipped during world gen |
-| `MC_DEBUG_DISABLE_STRUCTURES` | Structures skipped during world gen |
-| `MC_DEBUG_DISABLE_FEATURES` | All features (trees, ores, etc.) skipped |
-| `MC_DEBUG_DISABLE_ORE_VEINS` | Ore veins skipped during world gen |
-| `MC_DEBUG_DISABLE_BLENDING` | Blending pass skipped during world gen |
-| `MC_DEBUG_DISABLE_BELOW_ZERO_RETROGENERATION` | Below-zero retrogen skipped |
+| [`MC_DEBUG_LARGE_DRIPSTONE`](docs/flags/large-dripstone.md) | Large dripstone cluster generation overlay |
+| [`MC_DEBUG_CARVERS`](docs/flags/carvers.md) | Cave carver volume overlay |
+| [`MC_DEBUG_ORE_VEINS`](docs/flags/ore-veins.md) | Ore vein bounds and type overlay |
+| [`MC_DEBUG_AQUIFERS`](docs/flags/aquifers.md) | Aquifer cell boundary and fluid level overlay |
+| [`MC_DEBUG_FEATURE_COUNT`](docs/flags/feature-count.md) | Per-chunk feature placement count heatmap |
+| [`MC_DEBUG_DISABLE_LIQUID_SPREADING`](docs/flags/disable-liquid-spreading.md) | Freeze all liquids in place (no spreading) |
+| [`MC_DEBUG_DISABLE_FLUID_GENERATION`](docs/flags/disable-fluid-generation.md) | Skip fluid fill during world gen |
+| [`MC_DEBUG_DISABLE_AQUIFERS`](docs/flags/disable-aquifers.md) | Skip aquifer pass during world gen |
+| [`MC_DEBUG_DISABLE_SURFACE`](docs/flags/disable-surface.md) | Skip surface builder pass during world gen |
+| [`MC_DEBUG_DISABLE_CARVERS`](docs/flags/disable-carvers.md) | Skip cave carver passes during world gen |
+| [`MC_DEBUG_DISABLE_STRUCTURES`](docs/flags/disable-structures.md) | Skip all structure placement during world gen |
+| [`MC_DEBUG_DISABLE_FEATURES`](docs/flags/disable-features.md) | Skip all feature decoration during world gen |
+| [`MC_DEBUG_DISABLE_ORE_VEINS`](docs/flags/disable-ore-veins.md) | Skip large ore vein pass during world gen |
+| [`MC_DEBUG_DISABLE_BLENDING`](docs/flags/disable-blending.md) | Skip old/new chunk blending pass |
+| [`MC_DEBUG_DISABLE_BELOW_ZERO_RETROGENERATION`](docs/flags/disable-below-zero-retrogeneration.md) | Skip below-zero retrogen in legacy chunks |
 
 ---
 

@@ -1,7 +1,7 @@
 # Ore Veins
 
 **Property:** `MC_DEBUG_ORE_VEINS`
-**Tab:** Renderers
+**Tab:** World Generation
 **Requires restart:** Yes
 
 ## Description

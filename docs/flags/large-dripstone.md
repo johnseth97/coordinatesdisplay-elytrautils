@@ -1,7 +1,7 @@
 # Large Dripstone
 
 **Property:** `MC_DEBUG_LARGE_DRIPSTONE`
-**Tab:** Renderers
+**Tab:** World Generation
 **Requires restart:** Yes
 
 ## Description
