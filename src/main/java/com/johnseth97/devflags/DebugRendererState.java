@@ -15,22 +15,28 @@ import java.util.Map;
  */
 public final class DebugRendererState {
 
-    public static final Map<String, Boolean> ENABLED = new LinkedHashMap<>();
+  public static final Map<String, Boolean> ENABLED = new LinkedHashMap<>();
 
-    public static boolean isEnabled(String className) {
-        // Default true: new renderers appear enabled until explicitly toggled off.
-        return ENABLED.getOrDefault(className, true);
-    }
+  private DebugRendererState() {}
 
-    public static void toggle(String className) {
-        ENABLED.put(className, !isEnabled(className));
-    }
+  public static boolean isEnabled(String className) {
+    // Default true: new renderers appear enabled until explicitly toggled off.
+    return ENABLED.getOrDefault(className, true);
+  }
 
-    public static String friendlyName(String className) {
-        String s = className
-            .replaceAll("DebugRenderer$", "")
-            .replaceAll("Renderer$", "")
-            .replaceAll("Debug$", "");
-        return s.replaceAll("([A-Z])", " $1").trim();
-    }
+  public static void setEnabled(String className, boolean enabled) {
+    ENABLED.put(className, enabled);
+  }
+
+  public static void toggle(String className) {
+    setEnabled(className, !isEnabled(className));
+  }
+
+  public static String friendlyName(String className) {
+    String s = className
+      .replaceAll("DebugRenderer$", "")
+      .replaceAll("Renderer$", "")
+      .replaceAll("Debug$", "");
+    return s.replaceAll("([A-Z])", " $1").trim();
+  }
 }

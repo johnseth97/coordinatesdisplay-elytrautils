@@ -1,9 +1,11 @@
 package com.johnseth97.devflags.screen;
 
+import com.johnseth97.devflags.DebugRendererState;
 import com.johnseth97.devflags.DevFlagDescriptions;
 import com.johnseth97.devflags.DevFlagsConfig;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -88,6 +90,40 @@ public class DevFlagsConfigScreen extends Screen {
     "MC_DEBUG_DEFAULT_SKIN_OVERRIDE"
   );
 
+  private static final Map<String, String> DEBUG_RENDERER_KEYS = Map.ofEntries(
+    Map.entry("MC_DEBUG_PATHFINDING", "PathfindingRenderer"),
+    Map.entry("MC_DEBUG_NEIGHBORSUPDATE", "NeighborsUpdateRenderer"),
+    Map.entry("MC_DEBUG_STRUCTURES", "StructureRenderer"),
+    Map.entry("MC_DEBUG_GAME_EVENT_LISTENERS", "GameEventListenerRenderer"),
+    Map.entry("MC_DEBUG_VILLAGE_SECTIONS", "VillageSectionsDebugRenderer"),
+    Map.entry("MC_DEBUG_BRAIN", "BrainDebugRenderer"),
+    Map.entry("MC_DEBUG_POI", "PoiDebugRenderer"),
+    Map.entry("MC_DEBUG_BEES", "BeeDebugRenderer"),
+    Map.entry("MC_DEBUG_RAIDS", "RaidDebugRenderer"),
+    Map.entry("MC_DEBUG_GOAL_SELECTOR", "GoalSelectorDebugRenderer"),
+    Map.entry(
+      "MC_DEBUG_EXPERIMENTAL_REDSTONEWIRE_UPDATE_ORDER",
+      "RedstoneWireOrientationsRenderer"
+    ),
+    Map.entry("MC_DEBUG_SHAPES", "ShapeRenderer"),
+    Map.entry(
+      "MC_DEBUG_SHOW_LOCAL_SERVER_ENTITY_HIT_BOXES",
+      "LocalEntityHitboxRenderer"
+    ),
+    Map.entry(
+      "MC_DEBUG_ENTITY_BLOCK_INTERSECTION",
+      "EntityBlockIntersectionRenderer"
+    ),
+    Map.entry("MC_DEBUG_BLOCK_BREAK", "BlockBreakRenderer"),
+    Map.entry("MC_DEBUG_BREEZE_MOB", "BreezeDebugRenderer"),
+    Map.entry("MC_DEBUG_SCULK_CATALYST", "SculkCatalystDebugRenderer"),
+    Map.entry("MC_DEBUG_LARGE_DRIPSTONE", "LargeDripstoneDebugRenderer"),
+    Map.entry("MC_DEBUG_CARVERS", "CarverDebugRenderer"),
+    Map.entry("MC_DEBUG_ORE_VEINS", "OreVeinDebugRenderer"),
+    Map.entry("MC_DEBUG_AQUIFERS", "AquiferDebugRenderer"),
+    Map.entry("MC_DEBUG_FEATURE_COUNT", "FeatureCountRenderer")
+  );
+
   private enum Tab {
     RENDERERS,
     GAMEPLAY,
@@ -149,8 +185,16 @@ public class DevFlagsConfigScreen extends Screen {
       int y = startY + row * BTN_STRIDE;
 
       Button button = Button.builder(flagLabel(key), b -> {
-        DevFlagsConfig.setFlag(key, !DevFlagsConfig.isEnabled(key));
+        boolean next = !DevFlagsConfig.isEnabled(key);
+
+        DevFlagsConfig.setFlag(key, next);
         DevFlagsConfig.save();
+
+        String rendererClassName = DEBUG_RENDERER_KEYS.get(key);
+        if (rendererClassName != null) {
+          DebugRendererState.setEnabled(rendererClassName, next);
+        }
+
         b.setMessage(flagLabel(key));
       })
         .pos(x, y)
