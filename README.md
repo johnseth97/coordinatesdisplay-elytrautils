@@ -143,93 +143,93 @@ Each flag corresponds to a `DebugToggle` property set at startup. Click any flag
 
 ### Renderer Overlays
 
-| Flag | Effect |
-|---|---|
-| [`MC_DEBUG_PATHFINDING`](docs/flags/pathfinding.md) | Pathfinding route overlay |
-| [`MC_DEBUG_NEIGHBORSUPDATE`](docs/flags/neighborsupdate.md) | Block neighbor update overlay |
-| [`MC_DEBUG_STRUCTURES`](docs/flags/structures.md) | Structure bounding box overlay |
-| [`MC_DEBUG_GAME_EVENT_LISTENERS`](docs/flags/game-event-listeners.md) | Game event listener overlay |
-| [`MC_DEBUG_VILLAGE_SECTIONS`](docs/flags/village-sections.md) | Village section overlay |
-| [`MC_DEBUG_BRAIN`](docs/flags/brain.md) | Mob brain/memory overlay |
-| [`MC_DEBUG_POI`](docs/flags/poi.md) | Point of interest overlay |
-| [`MC_DEBUG_BEES`](docs/flags/bees.md) | Bee hive/path overlay |
-| [`MC_DEBUG_RAIDS`](docs/flags/raids.md) | Raid state overlay |
-| [`MC_DEBUG_GOAL_SELECTOR`](docs/flags/goal-selector.md) | AI goal selector overlay |
-| [`MC_DEBUG_EXPERIMENTAL_REDSTONEWIRE_UPDATE_ORDER`](docs/flags/experimental-redstonewire-update-order.md) | Experimental redstone wire update order overlay |
-| [`MC_DEBUG_SHAPES`](docs/flags/shapes.md) | Block collision shape overlay |
-| [`MC_DEBUG_SHOW_LOCAL_SERVER_ENTITY_HIT_BOXES`](docs/flags/show-local-server-entity-hit-boxes.md) | Entity hitbox overlay (integrated server) |
-| [`MC_DEBUG_ENTITY_BLOCK_INTERSECTION`](docs/flags/entity-block-intersection.md) | Entity/block intersection overlay |
-| [`MC_DEBUG_BLOCK_BREAK`](docs/flags/block-break.md) | Block break progress overlay |
-| [`MC_DEBUG_BREEZE_MOB`](docs/flags/breeze-mob.md) | Breeze mob debug overlay |
-| [`MC_DEBUG_SCULK_CATALYST`](docs/flags/sculk-catalyst.md) | Sculk catalyst spread overlay |
+| Flag | Effect | Restart? |
+|---|---|---|
+| [`MC_DEBUG_PATHFINDING`](docs/flags/pathfinding.md) | Pathfinding route overlay | No |
+| [`MC_DEBUG_NEIGHBORSUPDATE`](docs/flags/neighborsupdate.md) | Block neighbor update overlay | No |
+| [`MC_DEBUG_STRUCTURES`](docs/flags/structures.md) | Structure bounding box overlay | No |
+| [`MC_DEBUG_GAME_EVENT_LISTENERS`](docs/flags/game-event-listeners.md) | Game event listener overlay | No |
+| [`MC_DEBUG_VILLAGE_SECTIONS`](docs/flags/village-sections.md) | Village section overlay | No |
+| [`MC_DEBUG_BRAIN`](docs/flags/brain.md) | Mob brain/memory overlay | No |
+| [`MC_DEBUG_POI`](docs/flags/poi.md) | Point of interest overlay | No |
+| [`MC_DEBUG_BEES`](docs/flags/bees.md) | Bee hive/path overlay | No |
+| [`MC_DEBUG_RAIDS`](docs/flags/raids.md) | Raid state overlay | No |
+| [`MC_DEBUG_GOAL_SELECTOR`](docs/flags/goal-selector.md) | AI goal selector overlay | No |
+| [`MC_DEBUG_EXPERIMENTAL_REDSTONEWIRE_UPDATE_ORDER`](docs/flags/experimental-redstonewire-update-order.md) | Experimental redstone wire update order overlay | No |
+| [`MC_DEBUG_SHAPES`](docs/flags/shapes.md) | Block collision shape overlay | No |
+| [`MC_DEBUG_SHOW_LOCAL_SERVER_ENTITY_HIT_BOXES`](docs/flags/show-local-server-entity-hit-boxes.md) | Entity hitbox overlay (integrated server) | No |
+| [`MC_DEBUG_ENTITY_BLOCK_INTERSECTION`](docs/flags/entity-block-intersection.md) | Entity/block intersection overlay | No |
+| [`MC_DEBUG_BLOCK_BREAK`](docs/flags/block-break.md) | Block break progress overlay | No |
+| [`MC_DEBUG_BREEZE_MOB`](docs/flags/breeze-mob.md) | Breeze mob debug overlay | No |
+| [`MC_DEBUG_SCULK_CATALYST`](docs/flags/sculk-catalyst.md) | Sculk catalyst spread overlay | No |
 
 ### Gameplay & QOL
 
-| Flag | Effect |
-|---|---|
-| [`MC_DEBUG_DEV_COMMANDS`](docs/flags/dev-commands.md) | Enables additional internal dev commands |
-| [`MC_DEBUG_VERBOSE_COMMAND_ERRORS`](docs/flags/verbose-command-errors.md) | Full stack traces on command errors in chat |
-| [`MC_DEBUG_UNLOCK_ALL_TRADES`](docs/flags/unlock-all-trades.md) | All villager trade tiers unlocked immediately |
-| [`MC_DEBUG_IGNORE_LOCAL_MOB_CAP`](docs/flags/ignore-local-mob-cap.md) | Ignore mob cap on integrated server |
-| [`MC_DEBUG_OPEN_INCOMPATIBLE_WORLDS`](docs/flags/open-incompatible-worlds.md) | Allow opening worlds from incompatible versions |
-| [`MC_DEBUG_ALLOW_LOW_SIM_DISTANCE`](docs/flags/allow-low-sim-distance.md) | Allow simulation distance below the normal minimum |
-| [`MC_DEBUG_CHASE_COMMAND`](docs/flags/chase-command.md) | Enables `/chase` camera sync command |
-| [`MC_DEBUG_BYPASS_REALMS_VERSION_CHECK`](docs/flags/bypass-realms-version-check.md) | Skip Realms version compatibility check |
-| [`MC_DEBUG_TRIAL_SPAWNER_DETECTS_SHEEP_AS_PLAYERS`](docs/flags/trial-spawner-detects-sheep-as-players.md) | Trial spawner treats sheep as players (activation testing) |
-| [`MC_DEBUG_VAULT_DETECTS_SHEEP_AS_PLAYERS`](docs/flags/vault-detects-sheep-as-players.md) | Vault treats sheep as players (activation testing) |
-| [`MC_DEBUG_KEEP_JIGSAW_BLOCKS_DURING_STRUCTURE_GEN`](docs/flags/keep-jigsaw-blocks-during-structure-gen.md) | Keep jigsaw blocks in place after structure generation |
-| [`MC_DEBUG_STRUCTURE_EDIT_MODE`](docs/flags/structure-edit-mode.md) | Structure edit mode — preserves structure blocks in world |
-| [`MC_DEBUG_SAVE_STRUCTURES_AS_SNBT`](docs/flags/save-structures-as-snbt.md) | Save structures as SNBT text files instead of NBT |
-| [`MC_DEBUG_SHOW_SERVER_DEBUG_VALUES`](docs/flags/show-server-debug-values.md) | Show server-side debug values in F3 overlay |
-| [`MC_DEBUG_MONITOR_TICK_TIMES`](docs/flags/monitor-tick-times.md) | Record per-tick timing data |
-| [`MC_DEBUG_SUBTITLES`](docs/flags/subtitles.md) | Show subtitle entries for all sounds |
-| [`MC_DEBUG_CURSOR_POS`](docs/flags/cursor-pos.md) | Show cursor coordinates in F3 overlay |
-| [`MC_DEBUG_SOCIAL_INTERACTIONS`](docs/flags/social-interactions.md) | Show social interaction debug info |
-| [`MC_DEBUG_WORLD_RECREATE`](docs/flags/world-recreate.md) | Enable world recreation debug tooling |
-| [`MC_DEBUG_PANORAMA_SCREENSHOT`](docs/flags/panorama-screenshot.md) | Enable panorama screenshot capture mode |
-| [`MC_DEBUG_FORCE_ONBOARDING_SCREEN`](docs/flags/force-onboarding-screen.md) | Always show the new-player onboarding screen on launch |
-| [`MC_DEBUG_DUMP_TEXTURE_ATLAS`](docs/flags/dump-texture-atlas.md) | Dump texture atlases to disk on load |
-| [`MC_DEBUG_SYNCHRONOUS_GL_LOGS`](docs/flags/synchronous-gl-logs.md) | Emit GL debug logs synchronously |
-| [`MC_DEBUG_JFR_PROFILING_ENABLE_LEVEL_LOADING`](docs/flags/jfr-profiling-enable-level-loading.md) | Enable JFR profiling during level load |
-| [`MC_DEBUG_VERBOSE_SERVER_EVENTS`](docs/flags/verbose-server-events.md) | Log server events verbosely |
+| Flag | Effect | Restart? |
+|---|---|---|
+| [`MC_DEBUG_DEV_COMMANDS`](docs/flags/dev-commands.md) | Enables additional internal dev commands | Yes |
+| [`MC_DEBUG_VERBOSE_COMMAND_ERRORS`](docs/flags/verbose-command-errors.md) | Full stack traces on command errors in chat | Yes |
+| [`MC_DEBUG_UNLOCK_ALL_TRADES`](docs/flags/unlock-all-trades.md) | All villager trade tiers unlocked immediately | Yes |
+| [`MC_DEBUG_IGNORE_LOCAL_MOB_CAP`](docs/flags/ignore-local-mob-cap.md) | Ignore mob cap on integrated server | Yes |
+| [`MC_DEBUG_OPEN_INCOMPATIBLE_WORLDS`](docs/flags/open-incompatible-worlds.md) | Allow opening worlds from incompatible versions | Yes |
+| [`MC_DEBUG_ALLOW_LOW_SIM_DISTANCE`](docs/flags/allow-low-sim-distance.md) | Allow simulation distance below the normal minimum | Yes |
+| [`MC_DEBUG_CHASE_COMMAND`](docs/flags/chase-command.md) | Enables `/chase` camera sync command | Yes |
+| [`MC_DEBUG_BYPASS_REALMS_VERSION_CHECK`](docs/flags/bypass-realms-version-check.md) | Skip Realms version compatibility check | Yes |
+| [`MC_DEBUG_TRIAL_SPAWNER_DETECTS_SHEEP_AS_PLAYERS`](docs/flags/trial-spawner-detects-sheep-as-players.md) | Trial spawner treats sheep as players (activation testing) | Yes |
+| [`MC_DEBUG_VAULT_DETECTS_SHEEP_AS_PLAYERS`](docs/flags/vault-detects-sheep-as-players.md) | Vault treats sheep as players (activation testing) | Yes |
+| [`MC_DEBUG_KEEP_JIGSAW_BLOCKS_DURING_STRUCTURE_GEN`](docs/flags/keep-jigsaw-blocks-during-structure-gen.md) | Keep jigsaw blocks in place after structure generation | Yes |
+| [`MC_DEBUG_STRUCTURE_EDIT_MODE`](docs/flags/structure-edit-mode.md) | Structure edit mode — preserves structure blocks in world | Yes |
+| [`MC_DEBUG_SAVE_STRUCTURES_AS_SNBT`](docs/flags/save-structures-as-snbt.md) | Save structures as SNBT text files instead of NBT | Yes |
+| [`MC_DEBUG_SHOW_SERVER_DEBUG_VALUES`](docs/flags/show-server-debug-values.md) | Show server-side debug values in F3 overlay | Yes |
+| [`MC_DEBUG_MONITOR_TICK_TIMES`](docs/flags/monitor-tick-times.md) | Record per-tick timing data | Yes |
+| [`MC_DEBUG_SUBTITLES`](docs/flags/subtitles.md) | Show subtitle entries for all sounds | Yes |
+| [`MC_DEBUG_CURSOR_POS`](docs/flags/cursor-pos.md) | Show cursor coordinates in F3 overlay | Yes |
+| [`MC_DEBUG_SOCIAL_INTERACTIONS`](docs/flags/social-interactions.md) | Show social interaction debug info | Yes |
+| [`MC_DEBUG_WORLD_RECREATE`](docs/flags/world-recreate.md) | Enable world recreation debug tooling | Yes |
+| [`MC_DEBUG_PANORAMA_SCREENSHOT`](docs/flags/panorama-screenshot.md) | Enable panorama screenshot capture mode | Yes |
+| [`MC_DEBUG_FORCE_ONBOARDING_SCREEN`](docs/flags/force-onboarding-screen.md) | Always show the new-player onboarding screen on launch | Yes |
+| [`MC_DEBUG_DUMP_TEXTURE_ATLAS`](docs/flags/dump-texture-atlas.md) | Dump texture atlases to disk on load | Yes |
+| [`MC_DEBUG_SYNCHRONOUS_GL_LOGS`](docs/flags/synchronous-gl-logs.md) | Emit GL debug logs synchronously | Yes |
+| [`MC_DEBUG_JFR_PROFILING_ENABLE_LEVEL_LOADING`](docs/flags/jfr-profiling-enable-level-loading.md) | Enable JFR profiling during level load | Yes |
+| [`MC_DEBUG_VERBOSE_SERVER_EVENTS`](docs/flags/verbose-server-events.md) | Log server events verbosely | Yes |
 
 ### Misc
 
-| Flag | Effect |
-|---|---|
-| [`MC_DEBUG_DONT_SEND_TELEMETRY_TO_BACKEND`](docs/flags/dont-send-telemetry-to-backend.md) | Suppress outbound telemetry to Mojang's backend |
-| [`MC_DEBUG_UI_NARRATION`](docs/flags/ui-narration.md) | Debug UI narration/accessibility output |
-| [`MC_DEBUG_PREFER_WAYLAND`](docs/flags/prefer-wayland.md) | Prefer Wayland over X11 on Linux (no-op on other platforms) |
-| [`MC_DEBUG_VALIDATE_RESOURCE_PATH_CASE`](docs/flags/validate-resource-path-case.md) | Warn on resource path case mismatches |
-| [`MC_DEBUG_SHUFFLE_MODELS`](docs/flags/shuffle-models.md) | Randomize model draw order (render pipeline stress test) |
-| [`MC_DEBUG_DEFAULT_SKIN_OVERRIDE`](docs/flags/default-skin-override.md) | Override the default player skin |
-| [`MC_DEBUG_ACTIVE_TEXT_AREAS`](docs/flags/active-text-areas.md) | Highlight focused text input fields with a debug outline |
-| [`MC_DEBUG_SHUFFLE_UI_RENDERING_ORDER`](docs/flags/shuffle-ui-rendering-order.md) | Randomize UI element draw order (stress test) |
-| [`MC_DEBUG_RENDER_UI_LAYERING_RECTANGLES`](docs/flags/render-ui-layering-rectangles.md) | Visualize UI layer boundaries |
-| [`MC_DEBUG_NAMED_RUNNABLES`](docs/flags/named-runnables.md) | Attach debug names to scheduled runnables |
-| [`MC_DEBUG_DONT_SAVE_WORLD`](docs/flags/dont-save-world.md) | Suppress all world saves — world reverts on exit |
-| [`MC_DEBUG_CHAT_DISABLED`](docs/flags/chat-disabled.md) | Disable in-game chat entirely |
-| [`MC_DEBUG_FORCE_TELEMETRY`](docs/flags/force-telemetry.md) | Force telemetry submission regardless of opt-out |
+| Flag | Effect | Restart? |
+|---|---|---|
+| [`MC_DEBUG_DONT_SEND_TELEMETRY_TO_BACKEND`](docs/flags/dont-send-telemetry-to-backend.md) | Suppress outbound telemetry to Mojang's backend | Yes |
+| [`MC_DEBUG_UI_NARRATION`](docs/flags/ui-narration.md) | Debug UI narration/accessibility output | Yes |
+| [`MC_DEBUG_PREFER_WAYLAND`](docs/flags/prefer-wayland.md) | Prefer Wayland over X11 on Linux (no-op on other platforms) | Yes |
+| [`MC_DEBUG_VALIDATE_RESOURCE_PATH_CASE`](docs/flags/validate-resource-path-case.md) | Warn on resource path case mismatches | Yes |
+| [`MC_DEBUG_SHUFFLE_MODELS`](docs/flags/shuffle-models.md) | Randomize model draw order (render pipeline stress test) | Yes |
+| [`MC_DEBUG_DEFAULT_SKIN_OVERRIDE`](docs/flags/default-skin-override.md) | Override the default player skin | Yes |
+| [`MC_DEBUG_ACTIVE_TEXT_AREAS`](docs/flags/active-text-areas.md) | Highlight focused text input fields with a debug outline | Yes |
+| [`MC_DEBUG_SHUFFLE_UI_RENDERING_ORDER`](docs/flags/shuffle-ui-rendering-order.md) | Randomize UI element draw order (stress test) | Yes |
+| [`MC_DEBUG_RENDER_UI_LAYERING_RECTANGLES`](docs/flags/render-ui-layering-rectangles.md) | Visualize UI layer boundaries | Yes |
+| [`MC_DEBUG_NAMED_RUNNABLES`](docs/flags/named-runnables.md) | Attach debug names to scheduled runnables | Yes |
+| [`MC_DEBUG_DONT_SAVE_WORLD`](docs/flags/dont-save-world.md) | Suppress all world saves — world reverts on exit | Yes |
+| [`MC_DEBUG_CHAT_DISABLED`](docs/flags/chat-disabled.md) | Disable in-game chat entirely | Yes |
+| [`MC_DEBUG_FORCE_TELEMETRY`](docs/flags/force-telemetry.md) | Force telemetry submission regardless of opt-out | Yes |
 
 ### World Generation
 
-| Flag | Effect |
-|---|---|
-| [`MC_DEBUG_LARGE_DRIPSTONE`](docs/flags/large-dripstone.md) | Large dripstone cluster generation overlay |
-| [`MC_DEBUG_CARVERS`](docs/flags/carvers.md) | Cave carver volume overlay |
-| [`MC_DEBUG_ORE_VEINS`](docs/flags/ore-veins.md) | Ore vein bounds and type overlay |
-| [`MC_DEBUG_AQUIFERS`](docs/flags/aquifers.md) | Aquifer cell boundary and fluid level overlay |
-| [`MC_DEBUG_FEATURE_COUNT`](docs/flags/feature-count.md) | Per-chunk feature placement count heatmap |
-| [`MC_DEBUG_DISABLE_LIQUID_SPREADING`](docs/flags/disable-liquid-spreading.md) | Freeze all liquids in place (no spreading) |
-| [`MC_DEBUG_DISABLE_FLUID_GENERATION`](docs/flags/disable-fluid-generation.md) | Skip fluid fill during world gen |
-| [`MC_DEBUG_DISABLE_AQUIFERS`](docs/flags/disable-aquifers.md) | Skip aquifer pass during world gen |
-| [`MC_DEBUG_DISABLE_SURFACE`](docs/flags/disable-surface.md) | Skip surface builder pass during world gen |
-| [`MC_DEBUG_DISABLE_CARVERS`](docs/flags/disable-carvers.md) | Skip cave carver passes during world gen |
-| [`MC_DEBUG_DISABLE_STRUCTURES`](docs/flags/disable-structures.md) | Skip all structure placement during world gen |
-| [`MC_DEBUG_DISABLE_FEATURES`](docs/flags/disable-features.md) | Skip all feature decoration during world gen |
-| [`MC_DEBUG_DISABLE_ORE_VEINS`](docs/flags/disable-ore-veins.md) | Skip large ore vein pass during world gen |
-| [`MC_DEBUG_DISABLE_BLENDING`](docs/flags/disable-blending.md) | Skip old/new chunk blending pass |
-| [`MC_DEBUG_DISABLE_BELOW_ZERO_RETROGENERATION`](docs/flags/disable-below-zero-retrogeneration.md) | Skip below-zero retrogen in legacy chunks |
+| Flag | Effect | Restart? |
+|---|---|---|
+| [`MC_DEBUG_LARGE_DRIPSTONE`](docs/flags/large-dripstone.md) | Large dripstone cluster generation overlay | No |
+| [`MC_DEBUG_CARVERS`](docs/flags/carvers.md) | Cave carver volume overlay | No |
+| [`MC_DEBUG_ORE_VEINS`](docs/flags/ore-veins.md) | Ore vein bounds and type overlay | No |
+| [`MC_DEBUG_AQUIFERS`](docs/flags/aquifers.md) | Aquifer cell boundary and fluid level overlay | No |
+| [`MC_DEBUG_FEATURE_COUNT`](docs/flags/feature-count.md) | Per-chunk feature placement count heatmap | No |
+| [`MC_DEBUG_DISABLE_LIQUID_SPREADING`](docs/flags/disable-liquid-spreading.md) | Freeze all liquids in place (no spreading) | Yes |
+| [`MC_DEBUG_DISABLE_FLUID_GENERATION`](docs/flags/disable-fluid-generation.md) | Skip fluid fill during world gen | Yes |
+| [`MC_DEBUG_DISABLE_AQUIFERS`](docs/flags/disable-aquifers.md) | Skip aquifer pass during world gen | Yes |
+| [`MC_DEBUG_DISABLE_SURFACE`](docs/flags/disable-surface.md) | Skip surface builder pass during world gen | Yes |
+| [`MC_DEBUG_DISABLE_CARVERS`](docs/flags/disable-carvers.md) | Skip cave carver passes during world gen | Yes |
+| [`MC_DEBUG_DISABLE_STRUCTURES`](docs/flags/disable-structures.md) | Skip all structure placement during world gen | Yes |
+| [`MC_DEBUG_DISABLE_FEATURES`](docs/flags/disable-features.md) | Skip all feature decoration during world gen | Yes |
+| [`MC_DEBUG_DISABLE_ORE_VEINS`](docs/flags/disable-ore-veins.md) | Skip large ore vein pass during world gen | Yes |
+| [`MC_DEBUG_DISABLE_BLENDING`](docs/flags/disable-blending.md) | Skip old/new chunk blending pass | Yes |
+| [`MC_DEBUG_DISABLE_BELOW_ZERO_RETROGENERATION`](docs/flags/disable-below-zero-retrogeneration.md) | Skip below-zero retrogen in legacy chunks | Yes |
 
 ---
 
