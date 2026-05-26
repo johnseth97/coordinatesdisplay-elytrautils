@@ -39,6 +39,12 @@ jobs:
       - name: Strip local JDK path from gradle.properties
         run: sed -i '/org.gradle.java.home/d' gradle.properties
 
+      - name: Cache Minecraft client jar
+        uses: actions/cache@v4
+        with:
+          path: .gradle/minecraft
+          key: minecraft-26.1.2-client
+
       - name: Resolve version
         id: resolve
         run: |
@@ -93,8 +99,6 @@ jobs:
           echo "Generated changelog:"
           cat CHANGELOG.md
 
-      # NOTE: compileOnly deps come from a local PrismLauncher cache — see ci.yml
-      # for notes on seeding that cache before this step will succeed.
       - name: Build
         run: ./gradlew clean build -Pversion="${RELEASE_VERSION}"
 

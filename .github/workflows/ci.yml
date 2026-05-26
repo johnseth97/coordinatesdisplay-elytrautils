@@ -25,12 +25,14 @@ jobs:
       - name: Strip local JDK path from gradle.properties
         run: sed -i '/org.gradle.java.home/d' gradle.properties
 
-      # NOTE: compileOnly dependencies are resolved from a local PrismLauncher
-      # library cache (see build.gradle). CI must seed this cache or the build
-      # will fail with missing jars. Add a step here to restore a pre-seeded
-      # cache (e.g. actions/cache pointing to ~/.gradle/caches) once that
-      # artifact is available, or publish the MC/Fabric jars to a Maven repo
-      # and update build.gradle to pull from there.
+      # Cache the MC client jar so it isn't re-downloaded on every run.
+      # Key is fixed to the version — the jar never changes for a given release.
+      - name: Cache Minecraft client jar
+        uses: actions/cache@v4
+        with:
+          path: .gradle/minecraft
+          key: minecraft-26.1.2-client
+
       - name: Build
         run: ./gradlew clean build
 
