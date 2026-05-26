@@ -1,5 +1,7 @@
 # devflags-fabric
 
+![Brain and pathfinding debug overlays](screenshots/Brain-Path-Example.png)
+
 Fabric mod for Minecraft 26.1.2 that unlocks all hidden developer features normally only available inside Mojang's IDE.
 
 Sets `SharedConstants.IS_RUNNING_IN_IDE = true` and `MC_DEBUG_HOTKEYS=true` at class-load time.
@@ -95,6 +97,24 @@ F3+U freezes the view frustum in place. The game continues rendering from your n
 ## Bonus: Verbose Command Errors
 
 With `IS_RUNNING_IN_IDE = true`, command execution errors print a full stack trace to chat rather than just the error message. Useful when writing or debugging datapacks and function files.
+
+---
+
+## Installation
+
+**Requirements**
+- Minecraft **26.1.2**
+- [Fabric Loader](https://fabricmc.net/use/installer/) **0.19.2** or later
+
+**Steps**
+
+1. Download the latest `devflags-fabric-*.jar` from the [Releases](../../releases/latest) page.
+2. Place the jar in your instance's `mods/` folder:
+   - **Prism Launcher** — right-click your instance → *Edit* → *Mods* → *Add from file*, or drop the jar into `<instance>/minecraft/mods/`
+   - **Default launcher** — `%APPDATA%\.minecraft\mods\` (Windows) or `~/.minecraft/mods/` (macOS/Linux)
+3. Launch Minecraft. No configuration needed — all debug flags are enabled automatically on startup.
+
+> While waiting for Modrinth approval, builds are only available via the Releases page above.
 
 ---
 
