@@ -24,6 +24,7 @@ def ciMcJar = file("${rootDir}/.gradle/minecraft/minecraft-${minecraftVersion}-c
 repositories {
     maven { url 'https://maven.fabricmc.net/' }
     maven { url 'https://libraries.minecraft.net/' }
+    maven { url 'https://maven.terraformersmc.com/releases/' }
     mavenCentral()
 }
 
@@ -99,6 +100,79 @@ dependencies {
         annotationProcessor 'org.ow2.asm:asm-util:9.9'
     }
 }
+
+// ── Flag description codegen ──────────────────────────────────────────────────
+// Reads docs/flags/*.md, extracts **Property:** key and ## Description text,
+// and emits DevFlagDescriptions.java into the build directory so the markdown
+// files are the single source of truth for tooltip text.
+
+def generatedSrcDir = layout.buildDirectory.dir('generated/sources/devflags/main/java').get().asFile
+
+sourceSets.main.java.srcDirs += [generatedSrcDir]
+
+tasks.register('generateFlagDescriptions') {
+    def docsDir = file('docs/flags')
+    def outputFile = file("${generatedSrcDir}/com/johnseth97/devflags/DevFlagDescriptions.java")
+
+    inputs.dir docsDir
+    outputs.file outputFile
+
+    doLast {
+        def descriptions = [:]
+
+        docsDir.listFiles()?.findAll { it.name.endsWith('.md') }?.sort { it.name }?.each { mdFile ->
+            def lines = mdFile.readLines()
+            def key = null
+            def descLines = []
+            def inDesc = false
+
+            for (line in lines) {
+                if (line.startsWith('**Property:**')) {
+                    def m = (line =~ /`(MC_DEBUG_[^`]+)`/)
+                    if (m.find()) key = m.group(1)
+                }
+                if (line.trim() == '## Description') { inDesc = true; continue }
+                if (inDesc && line.startsWith('##')) inDesc = false
+                if (inDesc && !line.trim().isEmpty()) descLines << line.trim()
+            }
+
+            if (key) {
+                descriptions[key] = descLines.join(' ')
+                    .replace('\\', '\\\\')
+                    .replace('"', '\\"')
+            }
+        }
+
+        def sb = new StringBuilder()
+        sb << 'package com.johnseth97.devflags;\n\n'
+        sb << 'import java.util.HashMap;\n'
+        sb << 'import java.util.Map;\n'
+        sb << 'import net.minecraft.network.chat.Component;\n\n'
+        sb << 'public final class DevFlagDescriptions {\n\n'
+        sb << '    private static final Map<String, Component> DESCRIPTIONS = new HashMap<>();\n\n'
+        sb << '    static {\n'
+        descriptions.sort { a, b -> a.key <=> b.key }.each { k, v ->
+            sb << "        put(\"${k}\", \"${v}\");\n"
+        }
+        sb << '    }\n\n'
+        sb << '    private DevFlagDescriptions() {}\n\n'
+        sb << '    private static void put(String key, String description) {\n'
+        sb << '        DESCRIPTIONS.put(key, Component.literal(description));\n'
+        sb << '    }\n\n'
+        sb << '    public static Component get(String key) {\n'
+        sb << '        return DESCRIPTIONS.getOrDefault(key, Component.literal("No description available."));\n'
+        sb << '    }\n'
+        sb << '}\n'
+
+        outputFile.parentFile.mkdirs()
+        outputFile.text = sb.toString()
+        logger.lifecycle("[DevFlags] Generated DevFlagDescriptions.java (${descriptions.size()} entries)")
+    }
+}
+
+tasks.named('compileJava').configure { dependsOn 'generateFlagDescriptions' }
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 processResources {
     inputs.property "version", project.version
