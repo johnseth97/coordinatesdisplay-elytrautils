@@ -8,11 +8,70 @@ Sets `SharedConstants.IS_RUNNING_IN_IDE = true` and `MC_DEBUG_HOTKEYS=true` at c
 
 ---
 
+## Contents
+
+- [Installation](#installation)
+- [Important Keybinds](#important-keybinds)
+- [Debug Hotkeys (Client)](#debug-hotkeys-client)
+- [Server Commands](#server-commands)
+- [Always-Available Commands](#always-available-commands)
+- [Debug Flags Reference](#debug-flags-reference)
+  - [Renderer Overlays](#renderer-overlays)
+  - [Gameplay & QOL](#gameplay--qol)
+  - [Misc](#misc)
+  - [Intentionally Disabled](#intentionally-disabled)
+- [Build](#build)
+
+---
+
+## Installation
+
+**Requirements**
+- Minecraft **26.1.2**
+- [Fabric Loader](https://fabricmc.net/use/installer/) **0.19.2** or later
+
+**Steps**
+
+1. Download the latest `devflags-fabric-*.jar` from the [Releases](../../releases/latest) page.
+2. Place the jar in your instance's `mods/` folder:
+   - **Prism Launcher** — right-click your instance → *Edit* → *Mods* → *Add from file*, or drop the jar into `<instance>/minecraft/mods/`
+   - **Default launcher** — `%APPDATA%\.minecraft\mods\` (Windows) or `~/.minecraft/mods/` (macOS/Linux)
+3. Launch Minecraft. No configuration needed — all debug flags are enabled automatically on startup.
+
+> While waiting for Modrinth approval, builds are only available via the Releases page above.
+
+---
+
 ## Important Keybinds
 
-`F3 + Z` - Custom debug renderer menu
+`F3 + Z` — Custom debug renderer menu
 
-`F3 + F6` - Mojang internal debug options menu
+`F3 + F6` — Mojang internal debug options menu
+
+---
+
+## Debug Hotkeys (Client)
+
+All hotkeys below require F3 to be held. They are unlocked by `MC_DEBUG_HOTKEYS=true` and are handled by `handleChunkDebugKeys` inside `KeyboardHandler`.
+
+> **Note:** F3+F with this mod enabled toggles fog instead of cycling render distance. This is the dev-mode override.
+
+| Hotkey | Action |
+|---|---|
+| F3+E | Toggle chunk section path debug overlay |
+| F3+F | Toggle fog rendering on/off |
+| F3+L | Toggle smart culling (`Minecraft.smartCull`) |
+| F3+O | Toggle frustum culling octree overlay |
+| F3+U | Capture/freeze frustum at current camera position |
+| F3+Shift+U | Kill (release) the captured frustum |
+| F3+V | Toggle chunk section visibility overlay |
+| F3+W | Toggle wireframe rendering mode |
+
+### What frustum capture does
+
+F3+U freezes the view frustum in place. The game continues rendering from your new camera position but only draws chunks/entities that were visible from where you pressed the key. This lets you fly around and observe exactly what the frustum culling algorithm sees.
+
+---
 
 ## Server Commands
 
@@ -78,96 +137,85 @@ Runs the built-in game test framework. Only `minecraft:always_pass` is present i
 
 ---
 
-## Debug Hotkeys (Client)
-
-All hotkeys below require F3 to be held. They are unlocked by `MC_DEBUG_HOTKEYS=true` and are handled by `handleChunkDebugKeys` inside `KeyboardHandler`.
-
-> **Note:** F3+F with this mod enabled toggles fog instead of cycling render distance. This is the dev-mode override.
-
-| Hotkey | Action |
-|---|---|
-| F3+E | Toggle chunk section path debug overlay |
-| F3+F | Toggle fog rendering on/off |
-| F3+L | Toggle smart culling (`Minecraft.smartCull`) |
-| F3+O | Toggle frustum culling octree overlay |
-| F3+U | Capture/freeze frustum at current camera position |
-| F3+Shift+U | Kill (release) the captured frustum |
-| F3+V | Toggle chunk section visibility overlay |
-| F3+W | Toggle wireframe rendering mode |
-
-### What frustum capture does
-F3+U freezes the view frustum in place. The game continues rendering from your new camera position but only draws chunks/entities that were visible from where you pressed the key. This lets you fly around and observe exactly what the frustum culling algorithm sees.
-
----
-
-## Bonus: Verbose Command Errors
-
-With `IS_RUNNING_IN_IDE = true`, command execution errors print a full stack trace to chat rather than just the error message. Useful when writing or debugging datapacks and function files.
-
----
-
 ## Debug Flags Reference
 
-### Renderer / Overlay Flags
+Each flag corresponds to a `DebugToggle` property set at startup. Click any flag name for a full description and usage notes. Flags are grouped by the in-game debug menu tab where they appear (`F3 + F6`).
 
-| Property | Effect |
+### Renderer Overlays
+
+| Flag | Effect |
 |---|---|
-| `MC_DEBUG_ENABLED` | Master debug mode switch |
-| `MC_DEBUG_HOTKEYS` | Enables F3+* chunk/render debug hotkeys |
-| `MC_DEBUG_PATHFINDING` | Pathfinding route overlay |
-| `MC_DEBUG_NEIGHBORSUPDATE` | Block neighbor update overlay |
-| `MC_DEBUG_STRUCTURES` | Structure bounding box overlay |
-| `MC_DEBUG_GAME_EVENT_LISTENERS` | Game event listener overlay |
-| `MC_DEBUG_VILLAGE_SECTIONS` | Village section overlay |
-| `MC_DEBUG_BRAIN` | Mob brain/memory overlay |
-| `MC_DEBUG_POI` | Point of interest overlay |
-| `MC_DEBUG_BEES` | Bee hive/path overlay |
-| `MC_DEBUG_RAIDS` | Raid state overlay |
-| `MC_DEBUG_GOAL_SELECTOR` | AI goal selector overlay |
-| `MC_DEBUG_EXPERIMENTAL_REDSTONEWIRE_UPDATE_ORDER` | Experimental redstone wire update order overlay |
-| `MC_DEBUG_SHAPES` | Block collision shape overlay |
-| `MC_DEBUG_SHOW_LOCAL_SERVER_ENTITY_HIT_BOXES` | Entity hitbox overlay (integrated server) |
-| `MC_DEBUG_ENTITY_BLOCK_INTERSECTION` | Entity/block intersection overlay |
-| `MC_DEBUG_BLOCK_BREAK` | Block break progress overlay |
-| `MC_DEBUG_BREEZE_MOB` | Breeze mob debug overlay |
-| `MC_DEBUG_SCULK_CATALYST` | Sculk catalyst spread overlay |
-| `MC_DEBUG_LARGE_DRIPSTONE` | Large dripstone generation overlay |
-| `MC_DEBUG_CARVERS` | Cave carver debug overlay |
-| `MC_DEBUG_ORE_VEINS` | Ore vein generation overlay |
-| `MC_DEBUG_AQUIFERS` | Aquifer placement overlay |
-| `MC_DEBUG_FEATURE_COUNT` | Feature placement count overlay |
+| [`MC_DEBUG_PATHFINDING`](docs/flags/pathfinding.md) | Pathfinding route overlay |
+| [`MC_DEBUG_NEIGHBORSUPDATE`](docs/flags/neighborsupdate.md) | Block neighbor update overlay |
+| [`MC_DEBUG_STRUCTURES`](docs/flags/structures.md) | Structure bounding box overlay |
+| [`MC_DEBUG_GAME_EVENT_LISTENERS`](docs/flags/game-event-listeners.md) | Game event listener overlay |
+| [`MC_DEBUG_VILLAGE_SECTIONS`](docs/flags/village-sections.md) | Village section overlay |
+| [`MC_DEBUG_BRAIN`](docs/flags/brain.md) | Mob brain/memory overlay |
+| [`MC_DEBUG_POI`](docs/flags/poi.md) | Point of interest overlay |
+| [`MC_DEBUG_BEES`](docs/flags/bees.md) | Bee hive/path overlay |
+| [`MC_DEBUG_RAIDS`](docs/flags/raids.md) | Raid state overlay |
+| [`MC_DEBUG_GOAL_SELECTOR`](docs/flags/goal-selector.md) | AI goal selector overlay |
+| [`MC_DEBUG_EXPERIMENTAL_REDSTONEWIRE_UPDATE_ORDER`](docs/flags/experimental-redstonewire-update-order.md) | Experimental redstone wire update order overlay |
+| [`MC_DEBUG_SHAPES`](docs/flags/shapes.md) | Block collision shape overlay |
+| [`MC_DEBUG_SHOW_LOCAL_SERVER_ENTITY_HIT_BOXES`](docs/flags/show-local-server-entity-hit-boxes.md) | Entity hitbox overlay (integrated server) |
+| [`MC_DEBUG_ENTITY_BLOCK_INTERSECTION`](docs/flags/entity-block-intersection.md) | Entity/block intersection overlay |
+| [`MC_DEBUG_BLOCK_BREAK`](docs/flags/block-break.md) | Block break progress overlay |
+| [`MC_DEBUG_BREEZE_MOB`](docs/flags/breeze-mob.md) | Breeze mob debug overlay |
+| [`MC_DEBUG_SCULK_CATALYST`](docs/flags/sculk-catalyst.md) | Sculk catalyst spread overlay |
+| [`MC_DEBUG_LARGE_DRIPSTONE`](docs/flags/large-dripstone.md) | Large dripstone generation overlay |
+| [`MC_DEBUG_CARVERS`](docs/flags/carvers.md) | Cave carver debug overlay |
+| [`MC_DEBUG_ORE_VEINS`](docs/flags/ore-veins.md) | Ore vein generation overlay |
+| [`MC_DEBUG_AQUIFERS`](docs/flags/aquifers.md) | Aquifer placement overlay |
+| [`MC_DEBUG_FEATURE_COUNT`](docs/flags/feature-count.md) | Feature placement count overlay |
 
-### Gameplay / QOL Flags
+### Gameplay & QOL
 
-| Property | Effect |
+| Flag | Effect |
 |---|---|
-| `MC_DEBUG_DEV_COMMANDS` | Enables additional internal dev commands |
-| `MC_DEBUG_VERBOSE_COMMAND_ERRORS` | Full stack traces on command errors in chat |
-| `MC_DEBUG_UNLOCK_ALL_TRADES` | All villager trade tiers unlocked immediately |
-| `MC_DEBUG_IGNORE_LOCAL_MOB_CAP` | Ignore mob cap on integrated server |
-| `MC_DEBUG_OPEN_INCOMPATIBLE_WORLDS` | Allow opening worlds from incompatible versions |
-| `MC_DEBUG_ALLOW_LOW_SIM_DISTANCE` | Allow simulation distance below the normal minimum |
-| `MC_DEBUG_CHASE_COMMAND` | Enables `/chase` camera sync command |
-| `MC_DEBUG_BYPASS_REALMS_VERSION_CHECK` | Skip Realms version compatibility check |
-| `MC_DEBUG_TRIAL_SPAWNER_DETECTS_SHEEP_AS_PLAYERS` | Trial spawner treats sheep as players (activation testing) |
-| `MC_DEBUG_VAULT_DETECTS_SHEEP_AS_PLAYERS` | Vault treats sheep as players (activation testing) |
-| `MC_DEBUG_KEEP_JIGSAW_BLOCKS_DURING_STRUCTURE_GEN` | Keep jigsaw blocks in place after structure generation |
-| `MC_DEBUG_STRUCTURE_EDIT_MODE` | Structure edit mode — preserves structure blocks in world |
-| `MC_DEBUG_SAVE_STRUCTURES_AS_SNBT` | Save structures as SNBT text files instead of NBT |
-| `MC_DEBUG_SHOW_SERVER_DEBUG_VALUES` | Show server-side debug values in F3 overlay |
-| `MC_DEBUG_MONITOR_TICK_TIMES` | Record per-tick timing data |
-| `MC_DEBUG_SUBTITLES` | Show subtitle entries for all sounds |
-| `MC_DEBUG_CURSOR_POS` | Show cursor coordinates in F3 overlay |
-| `MC_DEBUG_SOCIAL_INTERACTIONS` | Show social interaction debug info |
-| `MC_DEBUG_WORLD_RECREATE` | Enable world recreation debug tooling |
-| `MC_DEBUG_PANORAMA_SCREENSHOT` | Enable panorama screenshot capture mode |
-| `MC_DEBUG_FORCE_ONBOARDING_SCREEN` | Always show the new-player onboarding screen on launch |
-| `MC_DEBUG_DUMP_TEXTURE_ATLAS` | Dump texture atlases to disk on load |
-| `MC_DEBUG_SYNCHRONOUS_GL_LOGS` | Emit GL debug logs synchronously |
-| `MC_DEBUG_JFR_PROFILING_ENABLE_LEVEL_LOADING` | Enable JFR profiling during level load |
-| `MC_DEBUG_VERBOSE_SERVER_EVENTS` | Log server events verbosely |
+| [`MC_DEBUG_DEV_COMMANDS`](docs/flags/dev-commands.md) | Enables additional internal dev commands |
+| [`MC_DEBUG_VERBOSE_COMMAND_ERRORS`](docs/flags/verbose-command-errors.md) | Full stack traces on command errors in chat |
+| [`MC_DEBUG_UNLOCK_ALL_TRADES`](docs/flags/unlock-all-trades.md) | All villager trade tiers unlocked immediately |
+| [`MC_DEBUG_IGNORE_LOCAL_MOB_CAP`](docs/flags/ignore-local-mob-cap.md) | Ignore mob cap on integrated server |
+| [`MC_DEBUG_OPEN_INCOMPATIBLE_WORLDS`](docs/flags/open-incompatible-worlds.md) | Allow opening worlds from incompatible versions |
+| [`MC_DEBUG_ALLOW_LOW_SIM_DISTANCE`](docs/flags/allow-low-sim-distance.md) | Allow simulation distance below the normal minimum |
+| [`MC_DEBUG_CHASE_COMMAND`](docs/flags/chase-command.md) | Enables `/chase` camera sync command |
+| [`MC_DEBUG_BYPASS_REALMS_VERSION_CHECK`](docs/flags/bypass-realms-version-check.md) | Skip Realms version compatibility check |
+| [`MC_DEBUG_TRIAL_SPAWNER_DETECTS_SHEEP_AS_PLAYERS`](docs/flags/trial-spawner-detects-sheep-as-players.md) | Trial spawner treats sheep as players (activation testing) |
+| [`MC_DEBUG_VAULT_DETECTS_SHEEP_AS_PLAYERS`](docs/flags/vault-detects-sheep-as-players.md) | Vault treats sheep as players (activation testing) |
+| [`MC_DEBUG_KEEP_JIGSAW_BLOCKS_DURING_STRUCTURE_GEN`](docs/flags/keep-jigsaw-blocks-during-structure-gen.md) | Keep jigsaw blocks in place after structure generation |
+| [`MC_DEBUG_STRUCTURE_EDIT_MODE`](docs/flags/structure-edit-mode.md) | Structure edit mode — preserves structure blocks in world |
+| [`MC_DEBUG_SAVE_STRUCTURES_AS_SNBT`](docs/flags/save-structures-as-snbt.md) | Save structures as SNBT text files instead of NBT |
+| [`MC_DEBUG_SHOW_SERVER_DEBUG_VALUES`](docs/flags/show-server-debug-values.md) | Show server-side debug values in F3 overlay |
+| [`MC_DEBUG_MONITOR_TICK_TIMES`](docs/flags/monitor-tick-times.md) | Record per-tick timing data |
+| [`MC_DEBUG_SUBTITLES`](docs/flags/subtitles.md) | Show subtitle entries for all sounds |
+| [`MC_DEBUG_CURSOR_POS`](docs/flags/cursor-pos.md) | Show cursor coordinates in F3 overlay |
+| [`MC_DEBUG_SOCIAL_INTERACTIONS`](docs/flags/social-interactions.md) | Show social interaction debug info |
+| [`MC_DEBUG_WORLD_RECREATE`](docs/flags/world-recreate.md) | Enable world recreation debug tooling |
+| [`MC_DEBUG_PANORAMA_SCREENSHOT`](docs/flags/panorama-screenshot.md) | Enable panorama screenshot capture mode |
+| [`MC_DEBUG_FORCE_ONBOARDING_SCREEN`](docs/flags/force-onboarding-screen.md) | Always show the new-player onboarding screen on launch |
+| [`MC_DEBUG_DUMP_TEXTURE_ATLAS`](docs/flags/dump-texture-atlas.md) | Dump texture atlases to disk on load |
+| [`MC_DEBUG_SYNCHRONOUS_GL_LOGS`](docs/flags/synchronous-gl-logs.md) | Emit GL debug logs synchronously |
+| [`MC_DEBUG_JFR_PROFILING_ENABLE_LEVEL_LOADING`](docs/flags/jfr-profiling-enable-level-loading.md) | Enable JFR profiling during level load |
+| [`MC_DEBUG_VERBOSE_SERVER_EVENTS`](docs/flags/verbose-server-events.md) | Log server events verbosely |
 
-### Intentionally OFF (destructive / disruptive)
+### Misc
+
+| Flag | Effect |
+|---|---|
+| [`MC_DEBUG_DONT_SEND_TELEMETRY_TO_BACKEND`](docs/flags/dont-send-telemetry-to-backend.md) | Suppress outbound telemetry to Mojang's backend |
+| [`MC_DEBUG_UI_NARRATION`](docs/flags/ui-narration.md) | Debug UI narration/accessibility output |
+| [`MC_DEBUG_PREFER_WAYLAND`](docs/flags/prefer-wayland.md) | Prefer Wayland over X11 on Linux (no-op on other platforms) |
+| [`MC_DEBUG_VALIDATE_RESOURCE_PATH_CASE`](docs/flags/validate-resource-path-case.md) | Warn on resource path case mismatches |
+| [`MC_DEBUG_SHUFFLE_MODELS`](docs/flags/shuffle-models.md) | Randomize model draw order (render pipeline stress test) |
+| [`MC_DEBUG_DEFAULT_SKIN_OVERRIDE`](docs/flags/default-skin-override.md) | Override the default player skin |
+| [`MC_DEBUG_ACTIVE_TEXT_AREAS`](docs/flags/active-text-areas.md) | Highlight focused text input fields with a debug outline |
+| [`MC_DEBUG_SHUFFLE_UI_RENDERING_ORDER`](docs/flags/shuffle-ui-rendering-order.md) | Randomize UI element draw order (stress test) |
+| [`MC_DEBUG_RENDER_UI_LAYERING_RECTANGLES`](docs/flags/render-ui-layering-rectangles.md) | Visualize UI layer boundaries |
+| [`MC_DEBUG_NAMED_RUNNABLES`](docs/flags/named-runnables.md) | Attach debug names to scheduled runnables |
+
+### Intentionally Disabled
+
+These flags exist in the game but are **not** enabled by this mod because they are destructive or disruptive to normal gameplay.
 
 | Property | Why it's off |
 |---|---|
@@ -184,24 +232,6 @@ With `IS_RUNNING_IN_IDE = true`, command execution errors print a full stack tra
 | `MC_DEBUG_DISABLE_ORE_VEINS` | Ore veins skipped during world gen |
 | `MC_DEBUG_DISABLE_BLENDING` | Blending pass skipped during world gen |
 | `MC_DEBUG_DISABLE_BELOW_ZERO_RETROGENERATION` | Below-zero retrogen skipped |
-
----
-
-## Installation
-
-**Requirements**
-- Minecraft **26.1.2**
-- [Fabric Loader](https://fabricmc.net/use/installer/) **0.19.2** or later
-
-**Steps**
-
-1. Download the latest `devflags-fabric-*.jar` from the [Releases](../../releases/latest) page.
-2. Place the jar in your instance's `mods/` folder:
-   - **Prism Launcher** — right-click your instance → *Edit* → *Mods* → *Add from file*, or drop the jar into `<instance>/minecraft/mods/`
-   - **Default launcher** — `%APPDATA%\.minecraft\mods\` (Windows) or `~/.minecraft/mods/` (macOS/Linux)
-3. Launch Minecraft. No configuration needed — all debug flags are enabled automatically on startup.
-
-> While waiting for Modrinth approval, builds are only available via the Releases page above.
 
 ---
 
