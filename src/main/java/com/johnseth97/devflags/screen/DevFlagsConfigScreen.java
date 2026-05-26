@@ -150,6 +150,7 @@ public class DevFlagsConfigScreen extends Screen {
   }
 
   private Tab currentTab = Tab.RENDERERS;
+  private boolean pendingRestart = false;
 
   public DevFlagsConfigScreen(Screen parent) {
     super(Component.literal("Dev Flags Config"));
@@ -212,6 +213,8 @@ public class DevFlagsConfigScreen extends Screen {
         String rendererClassName = DEBUG_RENDERER_KEYS.get(key);
         if (rendererClassName != null) {
           DebugRendererState.setEnabled(rendererClassName, next);
+        } else {
+          pendingRestart = true;
         }
 
         b.setMessage(flagLabel(key));
@@ -247,7 +250,7 @@ public class DevFlagsConfigScreen extends Screen {
       Component.literal("Changes take effect after restart"),
       this.width / 2,
       this.height - 8,
-      0x888888
+      pendingRestart ? 0xFFFF55 : 0x888888
     );
     super.extractRenderState(g, mouseX, mouseY, partial);
   }
@@ -283,7 +286,11 @@ public class DevFlagsConfigScreen extends Screen {
     MutableComponent status = Component.literal(
       on ? " [ON]" : " [OFF]"
     ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.RED);
-    return Component.literal(name).append(status);
+    MutableComponent label = Component.literal(name).append(status);
+    if (!DEBUG_RENDERER_KEYS.containsKey(key)) {
+      label.append(Component.literal(" ↻").withStyle(ChatFormatting.YELLOW));
+    }
+    return label;
   }
 
   private static String friendlyName(String key) {
