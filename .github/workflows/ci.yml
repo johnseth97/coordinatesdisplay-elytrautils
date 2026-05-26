@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      # gradle.properties hardcodes a local macOS JDK path; strip it so the
+      # JDK set up by actions/setup-java is used instead.
+      - name: Strip local JDK path from gradle.properties
+        run: sed -i '/org.gradle.java.home/d' gradle.properties
+
+      # NOTE: compileOnly dependencies are resolved from a local PrismLauncher
+      # library cache (see build.gradle). CI must seed this cache or the build
+      # will fail with missing jars. Add a step here to restore a pre-seeded
+      # cache (e.g. actions/cache pointing to ~/.gradle/caches) once that
+      # artifact is available, or publish the MC/Fabric jars to a Maven repo
+      # and update build.gradle to pull from there.
+      - name: Build
+        run: ./gradlew clean build
+
+      - name: Upload mod jar
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devflags-fabric
+          path: build/libs/*.jar

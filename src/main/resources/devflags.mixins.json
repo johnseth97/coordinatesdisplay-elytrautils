@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.johnseth97.devflags.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "SharedConstantsMixin"
+  ],
+  "client": [
+    "DebugRendererMixin",
+    "KeyboardHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

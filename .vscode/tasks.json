@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build & Deploy to Dev Instance",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "set -a; source .env; set +a; ./gradlew build && cp \"build/libs/${DEVFLAGS_JAR_NAME}\" \"${DEVFLAGS_DEV_INSTANCE_MODS_DIR}/${DEVFLAGS_JAR_NAME}\""
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

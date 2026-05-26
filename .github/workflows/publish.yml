@@ -1,0 +1,239 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., 1.0.0)"
+        required: true
+        type: string
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # gradle.properties hardcodes a local macOS JDK path — strip it for CI.
+      - name: Strip local JDK path from gradle.properties
+        run: sed -i '/org.gradle.java.home/d' gradle.properties
+
+      - name: Resolve version
+        id: resolve
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ github.ref_name }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          fi
+
+          VERSION="${VERSION#v}"
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
+
+      - name: Generate changelog from commits
+        run: |
+          set -euo pipefail
+
+          CURRENT_TAG="${RELEASE_TAG}"
+
+          if git rev-parse "$CURRENT_TAG" >/dev/null 2>&1; then
+            PREV_TAG="$(git describe --tags --abbrev=0 "$CURRENT_TAG^" 2>/dev/null || true)"
+          else
+            PREV_TAG="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+          fi
+
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="$PREV_TAG..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          {
+            echo "## DevFlags ${RELEASE_VERSION}"
+            echo
+            echo "**Changes:**"
+            echo
+
+            COMMITS="$(git log "$RANGE" --pretty=format:'- %s (%h)' --no-merges || true)"
+
+            if [ -n "$COMMITS" ]; then
+              echo "$COMMITS"
+            else
+              echo "- Release ${RELEASE_VERSION}"
+            fi
+          } > CHANGELOG.md
+
+          echo "Generated changelog:"
+          cat CHANGELOG.md
+
+      # NOTE: compileOnly deps come from a local PrismLauncher cache — see ci.yml
+      # for notes on seeding that cache before this step will succeed.
+      - name: Build
+        run: ./gradlew clean build -Pversion="${RELEASE_VERSION}"
+
+      - name: Upload JARs
+        uses: actions/upload-artifact@v4
+        with:
+          name: jars
+          path: build/libs/*.jar
+
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG.md
+
+  publish-github:
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+
+    steps:
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: jars
+          path: build/libs/
+
+      - name: Download changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+
+      - name: Read changelog
+        run: |
+          {
+            echo 'CHANGELOG_BODY<<EOF'
+            cat CHANGELOG.md
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
+      - name: Publish GitHub release
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          files: build/libs/*.jar
+          name: DevFlags ${{ env.RELEASE_VERSION }}
+          version: ${{ env.RELEASE_VERSION }}
+          version-type: release
+          changelog: ${{ env.CHANGELOG_BODY }}
+
+  publish-modrinth:
+    needs: prepare
+    runs-on: ubuntu-latest
+    # Only runs when MODRINTH_PROJECT_ID is configured as a repo variable.
+    if: ${{ vars.MODRINTH_PROJECT_ID != '' }}
+
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+
+    steps:
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: jars
+          path: build/libs/
+
+      - name: Download changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+
+      - name: Read changelog
+        run: |
+          {
+            echo 'CHANGELOG_BODY<<EOF'
+            cat CHANGELOG.md
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
+      - name: Publish to Modrinth
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          files: build/libs/*.jar
+          name: DevFlags ${{ env.RELEASE_VERSION }}
+          version: ${{ env.RELEASE_VERSION }}
+          version-type: release
+          changelog: ${{ env.CHANGELOG_BODY }}
+          loaders: |
+            fabric
+          game-versions: |
+            26.1.2
+
+  publish-curseforge:
+    needs: prepare
+    runs-on: ubuntu-latest
+    # Only runs when CURSEFORGE_PROJECT_ID is configured as a repo variable.
+    if: ${{ vars.CURSEFORGE_PROJECT_ID != '' }}
+
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+
+    steps:
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: jars
+          path: build/libs/
+
+      - name: Download changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+
+      - name: Read changelog
+        run: |
+          {
+            echo 'CHANGELOG_BODY<<EOF'
+            cat CHANGELOG.md
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
+      - name: Publish to CurseForge
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: build/libs/*.jar
+          name: DevFlags ${{ env.RELEASE_VERSION }}
+          version: ${{ env.RELEASE_VERSION }}
+          version-type: release
+          changelog: ${{ env.CHANGELOG_BODY }}
+          loaders: |
+            fabric
+          game-versions: |
+            26.1.2

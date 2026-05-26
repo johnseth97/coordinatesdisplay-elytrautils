@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "devflags",
+  "version": "${version}",
+  "name": "Dev Flags Enabled",
+  "description": "Forces SharedConstants.IS_RUNNING_IN_IDE = true to expose hidden dev/test commands.",
+  "authors": ["johnseth97"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.johnseth97.devflags.DevFlagsMod"]
+  },
+  "mixins": ["devflags.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.2",
+    "java": ">=25",
+    "minecraft": "~26.1-"
+  }
+}

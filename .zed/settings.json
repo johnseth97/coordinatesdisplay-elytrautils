@@ -1,0 +1,15 @@
+{
+  // Zed doesn't read .vscode/settings.json. Configure JDTLS here.
+  // Zed expands ${env:VAR}. Load .env (or your shell env) so this is set.
+  "lsp": {
+    "jdtls": {
+      "settings": {
+        "initialization_options": {
+          "workspaceFolders": [
+            "${env:DEVFLAGS_MOD_WORKSPACE_URI}",
+          ],
+        },
+      },
+    },
+  },
+}
