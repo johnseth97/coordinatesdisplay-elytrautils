@@ -8,6 +8,12 @@ Sets `SharedConstants.IS_RUNNING_IN_IDE = true` and `MC_DEBUG_HOTKEYS=true` at c
 
 ---
 
+## Important Keybinds
+
+`F3 + Z` - Custom debug renderer menu
+
+`F3 + F6` - Mojang internal debug options menu
+
 ## Server Commands
 
 These commands are registered only when `IS_RUNNING_IN_IDE` is true. All require operator permissions at the level noted.
@@ -97,6 +103,87 @@ F3+U freezes the view frustum in place. The game continues rendering from your n
 ## Bonus: Verbose Command Errors
 
 With `IS_RUNNING_IN_IDE = true`, command execution errors print a full stack trace to chat rather than just the error message. Useful when writing or debugging datapacks and function files.
+
+---
+
+## Debug Flags Reference
+
+### Renderer / Overlay Flags
+
+| Property | Effect |
+|---|---|
+| `MC_DEBUG_ENABLED` | Master debug mode switch |
+| `MC_DEBUG_HOTKEYS` | Enables F3+* chunk/render debug hotkeys |
+| `MC_DEBUG_PATHFINDING` | Pathfinding route overlay |
+| `MC_DEBUG_NEIGHBORSUPDATE` | Block neighbor update overlay |
+| `MC_DEBUG_STRUCTURES` | Structure bounding box overlay |
+| `MC_DEBUG_GAME_EVENT_LISTENERS` | Game event listener overlay |
+| `MC_DEBUG_VILLAGE_SECTIONS` | Village section overlay |
+| `MC_DEBUG_BRAIN` | Mob brain/memory overlay |
+| `MC_DEBUG_POI` | Point of interest overlay |
+| `MC_DEBUG_BEES` | Bee hive/path overlay |
+| `MC_DEBUG_RAIDS` | Raid state overlay |
+| `MC_DEBUG_GOAL_SELECTOR` | AI goal selector overlay |
+| `MC_DEBUG_EXPERIMENTAL_REDSTONEWIRE_UPDATE_ORDER` | Experimental redstone wire update order overlay |
+| `MC_DEBUG_SHAPES` | Block collision shape overlay |
+| `MC_DEBUG_SHOW_LOCAL_SERVER_ENTITY_HIT_BOXES` | Entity hitbox overlay (integrated server) |
+| `MC_DEBUG_ENTITY_BLOCK_INTERSECTION` | Entity/block intersection overlay |
+| `MC_DEBUG_BLOCK_BREAK` | Block break progress overlay |
+| `MC_DEBUG_BREEZE_MOB` | Breeze mob debug overlay |
+| `MC_DEBUG_SCULK_CATALYST` | Sculk catalyst spread overlay |
+| `MC_DEBUG_LARGE_DRIPSTONE` | Large dripstone generation overlay |
+| `MC_DEBUG_CARVERS` | Cave carver debug overlay |
+| `MC_DEBUG_ORE_VEINS` | Ore vein generation overlay |
+| `MC_DEBUG_AQUIFERS` | Aquifer placement overlay |
+| `MC_DEBUG_FEATURE_COUNT` | Feature placement count overlay |
+
+### Gameplay / QOL Flags
+
+| Property | Effect |
+|---|---|
+| `MC_DEBUG_DEV_COMMANDS` | Enables additional internal dev commands |
+| `MC_DEBUG_VERBOSE_COMMAND_ERRORS` | Full stack traces on command errors in chat |
+| `MC_DEBUG_UNLOCK_ALL_TRADES` | All villager trade tiers unlocked immediately |
+| `MC_DEBUG_IGNORE_LOCAL_MOB_CAP` | Ignore mob cap on integrated server |
+| `MC_DEBUG_OPEN_INCOMPATIBLE_WORLDS` | Allow opening worlds from incompatible versions |
+| `MC_DEBUG_ALLOW_LOW_SIM_DISTANCE` | Allow simulation distance below the normal minimum |
+| `MC_DEBUG_CHASE_COMMAND` | Enables `/chase` camera sync command |
+| `MC_DEBUG_BYPASS_REALMS_VERSION_CHECK` | Skip Realms version compatibility check |
+| `MC_DEBUG_TRIAL_SPAWNER_DETECTS_SHEEP_AS_PLAYERS` | Trial spawner treats sheep as players (activation testing) |
+| `MC_DEBUG_VAULT_DETECTS_SHEEP_AS_PLAYERS` | Vault treats sheep as players (activation testing) |
+| `MC_DEBUG_KEEP_JIGSAW_BLOCKS_DURING_STRUCTURE_GEN` | Keep jigsaw blocks in place after structure generation |
+| `MC_DEBUG_STRUCTURE_EDIT_MODE` | Structure edit mode — preserves structure blocks in world |
+| `MC_DEBUG_SAVE_STRUCTURES_AS_SNBT` | Save structures as SNBT text files instead of NBT |
+| `MC_DEBUG_SHOW_SERVER_DEBUG_VALUES` | Show server-side debug values in F3 overlay |
+| `MC_DEBUG_MONITOR_TICK_TIMES` | Record per-tick timing data |
+| `MC_DEBUG_SUBTITLES` | Show subtitle entries for all sounds |
+| `MC_DEBUG_CURSOR_POS` | Show cursor coordinates in F3 overlay |
+| `MC_DEBUG_SOCIAL_INTERACTIONS` | Show social interaction debug info |
+| `MC_DEBUG_WORLD_RECREATE` | Enable world recreation debug tooling |
+| `MC_DEBUG_PANORAMA_SCREENSHOT` | Enable panorama screenshot capture mode |
+| `MC_DEBUG_FORCE_ONBOARDING_SCREEN` | Always show the new-player onboarding screen on launch |
+| `MC_DEBUG_DUMP_TEXTURE_ATLAS` | Dump texture atlases to disk on load |
+| `MC_DEBUG_SYNCHRONOUS_GL_LOGS` | Emit GL debug logs synchronously |
+| `MC_DEBUG_JFR_PROFILING_ENABLE_LEVEL_LOADING` | Enable JFR profiling during level load |
+| `MC_DEBUG_VERBOSE_SERVER_EVENTS` | Log server events verbosely |
+
+### Intentionally OFF (destructive / disruptive)
+
+| Property | Why it's off |
+|---|---|
+| `MC_DEBUG_DONT_SAVE_WORLD` | World progress is never written to disk |
+| `MC_DEBUG_CHAT_DISABLED` | Disables chat entirely |
+| `MC_DEBUG_FORCE_TELEMETRY` | Forces telemetry submission |
+| `MC_DEBUG_DISABLE_LIQUID_SPREADING` | Liquids freeze in place |
+| `MC_DEBUG_DISABLE_FLUID_GENERATION` | No fluid generation during world gen |
+| `MC_DEBUG_DISABLE_AQUIFERS` | Aquifers skipped during world gen |
+| `MC_DEBUG_DISABLE_SURFACE` | Surface pass skipped during world gen |
+| `MC_DEBUG_DISABLE_CARVERS` | Cave carvers skipped during world gen |
+| `MC_DEBUG_DISABLE_STRUCTURES` | Structures skipped during world gen |
+| `MC_DEBUG_DISABLE_FEATURES` | All features (trees, ores, etc.) skipped |
+| `MC_DEBUG_DISABLE_ORE_VEINS` | Ore veins skipped during world gen |
+| `MC_DEBUG_DISABLE_BLENDING` | Blending pass skipped during world gen |
+| `MC_DEBUG_DISABLE_BELOW_ZERO_RETROGENERATION` | Below-zero retrogen skipped |
 
 ---
 
