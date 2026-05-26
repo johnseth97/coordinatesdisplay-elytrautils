@@ -1,0 +1,26 @@
+# Gradle / Java
+.gradle/
+build/
+out/
+**/build/
+**/out/
+**/*.class
+
+# IDEs
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/*.log
+.vscode/*.local
+.zed/*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
