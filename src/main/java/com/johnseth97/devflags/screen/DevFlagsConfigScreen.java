@@ -3,7 +3,6 @@ package com.johnseth97.devflags.screen;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +10,7 @@ import java.util.Set;
 import com.johnseth97.devflags.DebugRendererState;
 import com.johnseth97.devflags.DevFlagDescriptions;
 import com.johnseth97.devflags.DevFlagsConfig;
+import com.johnseth97.devflags.DevFlagsPendingState;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -154,7 +154,6 @@ public class DevFlagsConfigScreen extends Screen {
   }
 
   private Tab currentTab = Tab.RENDERERS;
-  private final Set<String> pendingRestartKeys = new LinkedHashSet<>();
   private final Map<String, Button> currentButtons = new HashMap<>();
 
   public DevFlagsConfigScreen(Screen parent) {
@@ -219,7 +218,7 @@ public class DevFlagsConfigScreen extends Screen {
         if (rendererClassName != null) {
           DebugRendererState.setEnabled(rendererClassName, next);
         } else {
-          pendingRestartKeys.add(key);
+          DevFlagsPendingState.onToggle(key, next);
         }
 
         b.setMessage(flagLabel(key));
@@ -258,34 +257,38 @@ public class DevFlagsConfigScreen extends Screen {
     g.fill(0, 0, this.width, this.height, 0xB0000000);
     g.centeredText(this.font, this.title, this.width / 2, 8, 0xFFFFFF);
 
-    for (String key : pendingRestartKeys) {
+    Set<String> dirtyKeys = DevFlagsPendingState.getDirtyKeys();
+    for (String key : dirtyKeys) {
       Button btn = currentButtons.get(key);
       if (btn != null) {
-        g.fill(btn.getX(), btn.getY(), btn.getX() + btn.getWidth(), btn.getY() + btn.getHeight(), 0x60FFFF00);
+        int x0 = btn.getX() - 2;
+        int y0 = btn.getY() - 2;
+        int x1 = btn.getX() + btn.getWidth() + 2;
+        int y1 = btn.getY() + btn.getHeight() + 2;
+        g.fill(x0, y0, x1, y1, 0xFFFFFF00);
       }
     }
 
-    Component warning = buildRestartWarning();
+    String warning = buildRestartWarning(dirtyKeys);
     if (warning != null) {
-      g.centeredText(this.font, warning, this.width / 2, this.height - 20, 0xFFFFFF);
+      g.centeredText(this.font, warning, this.width / 2, this.height - 20, 0xFF5555);
     }
     g.centeredText(
       this.font,
       Component.literal("Changes take effect after restart"),
       this.width / 2,
       this.height - 8,
-      pendingRestartKeys.isEmpty() ? 0x888888 : 0xFFFF55
+      dirtyKeys.isEmpty() ? 0x888888 : 0xFFFF55
     );
     super.extractRenderState(g, mouseX, mouseY, partial);
   }
 
-  private Component buildRestartWarning() {
-    if (pendingRestartKeys.isEmpty()) return null;
+  private String buildRestartWarning(Set<String> dirtyKeys) {
+    if (dirtyKeys.isEmpty()) return null;
     List<String> names = new ArrayList<>();
-    for (String key : pendingRestartKeys) names.add(friendlyName(key));
+    for (String key : dirtyKeys) names.add(friendlyName(key));
     if (names.size() == 1) {
-      return Component.literal("Restart required for " + names.get(0))
-        .withStyle(ChatFormatting.RED);
+      return "Restart required for " + names.get(0);
     }
     StringBuilder sb = new StringBuilder("Restart required for ");
     int maxWidth = this.width - 20;
@@ -293,11 +296,10 @@ public class DevFlagsConfigScreen extends Screen {
       if (i > 0) sb.append(", ");
       sb.append(names.get(i));
       if (this.font.width(sb.toString()) > maxWidth) {
-        return Component.literal("Restart required for " + names.size() + " flags")
-          .withStyle(ChatFormatting.RED);
+        return "Restart required for " + names.size() + " flags";
       }
     }
-    return Component.literal(sb.toString()).withStyle(ChatFormatting.RED);
+    return sb.toString();
   }
 
   @Override

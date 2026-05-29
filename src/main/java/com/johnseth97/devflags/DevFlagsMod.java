@@ -18,6 +18,7 @@ public final class DevFlagsMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        DevFlagsPendingState.clear();
         LOGGER.info("[DevFlags] SharedConstants.IS_RUNNING_IN_IDE = {}", SharedConstants.IS_RUNNING_IN_IDE);
         // Belt-and-suspenders: also set it here in case the mixin was too early
         // or the field was reset between class load and mod init.
