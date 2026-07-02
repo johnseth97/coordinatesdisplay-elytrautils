@@ -47,12 +47,33 @@ public final class FlightMath {
     }
 
     /**
-     * Distance to the ground below the player. Raycasts straight down for a
-     * real "radar altimeter" reading; falls back to the current dimension's
-     * configured sea level (itself dimension-type data, not an
-     * Overworld-specific constant) when the raycast finds nothing.
+     * Distance to the ground below the player, per the configured
+     * {@link AltimeterMode} (issue #11):
+     * <ul>
+     *   <li>{@code RADAR} — straight-down raycast, falling back to the
+     *       barometric reference if the raycast finds nothing.</li>
+     *   <li>{@code BAROMETRIC} — always the fixed reference (sea level or a
+     *       custom Y), no raycast.</li>
+     *   <li>{@code AUTO} — radar below {@code autoSwitchoverHeight} AGL,
+     *       barometric above it, mirroring real aircraft altimetry.</li>
+     * </ul>
      */
     public static GroundReading findGroundDistance(LocalPlayer player) {
+        ElytraUtilsConfig config = CoordinatesDisplayElytraUtils.getConfig();
+        if (config.altimeterMode == AltimeterMode.BAROMETRIC) {
+            return new GroundReading(barometricDistance(player, config), false);
+        }
+
+        GroundReading radar = raycastGroundDistance(player, config);
+        if (config.altimeterMode == AltimeterMode.AUTO
+                && radar.raycastHit()
+                && radar.distance() > config.autoSwitchoverHeight) {
+            return new GroundReading(barometricDistance(player, config), false);
+        }
+        return radar;
+    }
+
+    private static GroundReading raycastGroundDistance(LocalPlayer player, ElytraUtilsConfig config) {
         Level level = player.level();
         Vec3 from = player.position();
         double minY = Math.max(level.getMinY(), from.y - MAX_RAYCAST_DISTANCE);
@@ -63,9 +84,12 @@ public final class FlightMath {
         if (hit.getType() != HitResult.Type.MISS) {
             return new GroundReading(from.y - hit.getLocation().y, true);
         }
+        return new GroundReading(barometricDistance(player, config), false);
+    }
 
-        double seaLevelDistance = from.y - level.getSeaLevel();
-        return new GroundReading(Math.max(0.0, seaLevelDistance), false);
+    private static double barometricDistance(LocalPlayer player, ElytraUtilsConfig config) {
+        double referenceY = config.barometricUseSeaLevel ? player.level().getSeaLevel() : config.customBarometricY;
+        return Math.max(0.0, player.position().y - referenceY);
     }
 
     /** Ticks remaining before ground impact at the current descent rate, or -1 if not descending. */

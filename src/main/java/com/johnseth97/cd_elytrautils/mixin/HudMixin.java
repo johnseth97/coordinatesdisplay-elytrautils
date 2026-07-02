@@ -1,6 +1,7 @@
 package com.johnseth97.cd_elytrautils.mixin;
 
 import com.johnseth97.cd_elytrautils.CoordinatesDisplayElytraUtils;
+import com.johnseth97.cd_elytrautils.ElytraUtilsConfig;
 import com.johnseth97.cd_elytrautils.FlightMath;
 import dev.boxadactle.boxlib.layouts.RenderingLayout;
 import dev.boxadactle.boxlib.layouts.component.LayoutContainerComponent;
@@ -60,7 +61,17 @@ public abstract class HudMixin {
                 || startCorner == StartCorner.BOTTOM_RIGHT
                 || startCorner == StartCorner.BOTTOM;
 
-        ParagraphComponent rowComponent = new ParagraphComponent(0, buildFlightLine(player), buildImpactLine(player), buildRangeLine(player), buildFlightTimeLine(player));
+        ParagraphComponent rowComponent = new ParagraphComponent(0, buildFlightLine(player));
+        ElytraUtilsConfig config = CoordinatesDisplayElytraUtils.getConfig();
+        if (config.showImpactLine) {
+            rowComponent.add(buildImpactLine(player));
+        }
+        if (config.showRangeLine) {
+            rowComponent.add(buildRangeLine(player));
+        }
+        if (config.showFlightTimeLine) {
+            rowComponent.add(buildFlightTimeLine(player));
+        }
         ColumnLayout wrapper = new ColumnLayout(rect.getX(), rect.getY(), 2);
         if (growUpward) {
             // Keep the original block's bottom edge fixed: shift the wrapper
