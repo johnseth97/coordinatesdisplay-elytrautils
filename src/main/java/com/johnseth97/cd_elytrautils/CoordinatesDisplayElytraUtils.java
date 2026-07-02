@@ -2,18 +2,25 @@ package com.johnseth97.cd_elytrautils;
 
 import dev.boxadactle.boxlib.config.BConfigClass;
 import dev.boxadactle.boxlib.config.BConfigHandler;
-import net.fabricmc.api.ModInitializer;
+import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CoordinatesDisplayElytraUtils implements ModInitializer {
+/**
+ * This mod is client-only ({@code "environment": "client"} in fabric.mod.json)
+ * so a {@link ClientModInitializer} + {@code "client"} entrypoint is used
+ * rather than the generic {@code ModInitializer}/{@code "main"} pair — client
+ * rendering registries like HudElementRegistry are only guaranteed-safe to
+ * touch from client-entrypoint timing.
+ */
+public final class CoordinatesDisplayElytraUtils implements ClientModInitializer {
     public static final String MOD_ID = "coordinatesdisplay_elytrautils";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     private static BConfigClass<ElytraUtilsConfig> CONFIG;
 
     @Override
-    public void onInitialize() {
+    public void onInitializeClient() {
         CONFIG = BConfigHandler.registerConfig(ElytraUtilsConfig.class);
         MasterCautionOverlay.register();
         LOGGER.info("[{}] initialized", MOD_ID);

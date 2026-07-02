@@ -51,6 +51,15 @@ public final class MasterCautionOverlay {
 
         double groundDistance = FlightMath.glideRangeBlocks(player, horizontalSpeed, vy);
         double durabilityDistance = FlightMath.durabilityLimitedBlocks(player, horizontalSpeed);
+
+        // Throttled diagnostic so we can confirm the actual computed values
+        // from a real flight instead of guessing — remove once confirmed working.
+        if (player.tickCount % 40 == 0) {
+            CoordinatesDisplayElytraUtils.LOGGER.info(
+                    "[master-caution] fallFlying={} groundDistance={} durabilityDistance={} willTrigger={}",
+                    player.isFallFlying(), groundDistance, durabilityDistance, durabilityDistance >= 0.0 && groundDistance >= 0.0 && durabilityDistance < groundDistance);
+        }
+
         if (groundDistance < 0.0 || durabilityDistance < 0.0 || durabilityDistance >= groundDistance) {
             return;
         }
