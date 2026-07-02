@@ -53,16 +53,6 @@ public final class MasterCautionOverlay {
         // (see FlightMath's class doc).
         double ticksToGround = FlightMath.ticksToGround(player, vy);
         double ticksUntilDurabilityFloor = FlightMath.durabilityLimitedTicks(player);
-
-        // Throttled diagnostic so we can confirm the actual computed values
-        // from a real flight instead of guessing — remove once confirmed working.
-        if (player.tickCount % 40 == 0) {
-            CoordinatesDisplayElytraUtils.LOGGER.info(
-                    "[master-caution] fallFlying={} ticksToGround={} ticksUntilDurabilityFloor={} willTrigger={}",
-                    player.isFallFlying(), ticksToGround, ticksUntilDurabilityFloor,
-                    ticksUntilDurabilityFloor >= 0.0 && ticksToGround >= 0.0 && ticksUntilDurabilityFloor < ticksToGround);
-        }
-
         if (ticksToGround < 0.0 || ticksUntilDurabilityFloor < 0.0 || ticksUntilDurabilityFloor >= ticksToGround) {
             return;
         }
@@ -74,6 +64,11 @@ public final class MasterCautionOverlay {
         Component warning = Component.literal(WARNING_TEXT).withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
         int centerX = graphics.guiWidth() / 2;
         int centerY = graphics.guiHeight() / 2 - 40;
-        graphics.drawCenteredString(client.font, warning, centerX, centerY, 0xFFFFFF);
+        // GuiGraphics#drawString treats a zero alpha byte as "don't draw at
+        // all" (see ARGB.alpha(k) == 0 check) rather than defaulting to
+        // opaque — 0xFFFFFF has no alpha byte set, which was silently
+        // no-op'ing every draw call despite the trigger logic firing
+        // correctly (confirmed via diagnostic logging). Must be 0xFFFFFFFF.
+        graphics.drawCenteredString(client.font, warning, centerX, centerY, 0xFFFFFFFF);
     }
 }
