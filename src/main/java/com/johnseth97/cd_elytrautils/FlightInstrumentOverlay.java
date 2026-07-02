@@ -178,8 +178,15 @@ public final class FlightInstrumentOverlay {
         int structColor = config.flightInstrumentColor & 0xFFFFFF;
         int baseAlpha = (config.flightInstrumentColor >>> 24) & 0xFF;
         double pxPerDeg = BASE_PIXELS_PER_DEGREE * scale;
-        int cx = graphics.guiWidth() / 2;
-        int cy = graphics.guiHeight() / 2;
+        // Vanilla's own crosshair (Gui#renderCrosshair) blits a 15x15 sprite
+        // at ((guiWidth-15)/2, (guiHeight-15)/2), NOT guiWidth()/2 — with an
+        // odd sprite size, that's a different integer-division rounding.
+        // For an even guiWidth this puts the sprite's true center pixel at
+        // guiWidth/2 - 1, one pixel left of the naive guiWidth()/2 this used
+        // to use — matched exactly here so the boresight/ladder/FPM line up
+        // with the actual crosshair instead of sitting 1px off it.
+        int cx = (graphics.guiWidth() - 15) / 2 + 7;
+        int cy = (graphics.guiHeight() - 15) / 2 + 7;
         int immersiveHalfHeight = (int) Math.round(config.immersiveHudHeightPixels);
         int stateColor = FlightColors.flightStateColor(pitch, vy, horizontalSpeed, true);
         Font font = client.font;
