@@ -59,7 +59,7 @@ public abstract class HudMixin {
                 || startCorner == StartCorner.BOTTOM_RIGHT
                 || startCorner == StartCorner.BOTTOM;
 
-        ParagraphComponent rowComponent = new ParagraphComponent(0, buildElytraRow(player));
+        ParagraphComponent rowComponent = new ParagraphComponent(0, buildFlightLine(player), buildImpactLine(player));
         ColumnLayout wrapper = new ColumnLayout(rect.getX(), rect.getY(), 2);
         if (growUpward) {
             // Keep the original block's bottom edge fixed: shift the wrapper
@@ -146,7 +146,7 @@ public abstract class HudMixin {
         return hasElytraEquipped && holdingRockets;
     }
 
-    private static Component buildElytraRow(LocalPlayer player) {
+    private static Component buildFlightLine(LocalPlayer player) {
         float pitch = player.getXRot();
         Vec3 velocity = player.getDeltaMovement();
         double vy = velocity.y;
@@ -167,16 +167,22 @@ public abstract class HudMixin {
             status = coloredText("↓ DIVE", 0xFFAA00);
         }
 
-        float wallImpactHearts = estimateWallImpactHearts(player, horizontalSpeed);
-        float fallImpactHearts = estimateFallImpactHearts(player);
-
         MutableComponent row = Component.literal("Elytra  ").withStyle(ChatFormatting.GRAY);
         row.append(Component.literal(String.format("%.1f°  ", pitch)).withStyle(ChatFormatting.WHITE));
         row.append(status);
         row.append(Component.literal("  "));
         row.append(Component.literal(String.format("Vy %.2f  ", vy)).withStyle(ChatFormatting.WHITE));
-        row.append(Component.literal(String.format("H %.2f  ", horizontalSpeed)).withStyle(ChatFormatting.WHITE));
-        row.append(Component.literal("Impact ").withStyle(ChatFormatting.GRAY));
+        row.append(Component.literal(String.format("H %.2f", horizontalSpeed)).withStyle(ChatFormatting.WHITE));
+        return row;
+    }
+
+    private static Component buildImpactLine(LocalPlayer player) {
+        Vec3 velocity = player.getDeltaMovement();
+        double horizontalSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+        float wallImpactHearts = estimateWallImpactHearts(player, horizontalSpeed);
+        float fallImpactHearts = estimateFallImpactHearts(player);
+
+        MutableComponent row = Component.literal("  Impact ").withStyle(ChatFormatting.GRAY);
         row.append(impactHeartsText("H", wallImpactHearts));
         row.append(Component.literal(" "));
         row.append(impactHeartsText("V", fallImpactHearts));
