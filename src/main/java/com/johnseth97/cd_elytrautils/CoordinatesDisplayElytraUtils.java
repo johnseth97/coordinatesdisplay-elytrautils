@@ -17,7 +17,10 @@ public final class CoordinatesDisplayElytraUtils implements ClientModInitializer
     public static final String MOD_ID = "coordinatesdisplay_elytrautils";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    private static BConfigClass<ElytraUtilsConfig> CONFIG;
+    // Public (not just exposed via getConfig()) so the config screen can call
+    // cacheConfig()/restoreCache()/save() directly, matching CoordinatesDisplay's
+    // own precedent.
+    public static BConfigClass<ElytraUtilsConfig> CONFIG;
 
     @Override
     public void onInitializeClient() {

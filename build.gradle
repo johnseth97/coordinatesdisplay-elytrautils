@@ -13,6 +13,7 @@ repositories {
         forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
         filter { includeGroup 'maven.modrinth' }
     }
+    maven { name = 'TerraformersMC'; url = 'https://maven.terraformersmc.com/releases/' }
 }
 
 dependencies {
@@ -27,6 +28,14 @@ dependencies {
     // fabric.mod.json so Fabric Loader enforces them at launch.
     modImplementation "maven.modrinth:coordinates-display:${project.coordinatesdisplay_version}"
     modImplementation "maven.modrinth:boxlib:${project.boxlib_version}"
+
+    // ModMenu integration is optional at runtime — Fabric Loader only ever
+    // instantiates ElytraUtilsModMenuIntegration if ModMenu itself queries
+    // for the "modmenu" entrypoint, so its class (and thus these imports)
+    // never loads when ModMenu isn't installed. modCompileOnly keeps it off
+    // the required-dependency list while still remapping correctly for
+    // compilation.
+    modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 }
 
 processResources {

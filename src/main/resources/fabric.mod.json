@@ -8,7 +8,8 @@
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "client": ["com.johnseth97.cd_elytrautils.CoordinatesDisplayElytraUtils"]
+    "client": ["com.johnseth97.cd_elytrautils.CoordinatesDisplayElytraUtils"],
+    "modmenu": ["com.johnseth97.cd_elytrautils.ElytraUtilsModMenuIntegration"]
   },
   "mixins": ["cd_elytrautils.mixins.json"],
   "depends": {

@@ -1,12 +1,13 @@
 package com.johnseth97.cd_elytrautils;
 
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.Identifier;
 
 /**
@@ -61,14 +62,16 @@ public final class MasterCautionOverlay {
             return;
         }
 
-        Component warning = Component.literal(WARNING_TEXT).withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
+        // Config stores RGB only (no alpha) — see ElytraUtilsConfig — so the
+        // user can't reintroduce the zero-alpha bug that silently no-op'd
+        // every draw call before it was fixed. Style carries the actual
+        // color; the trailing draw-call color is always fully opaque so the
+        // style's color shows through (matches HudMixin's coloredText usage).
+        int configuredColor = CoordinatesDisplayElytraUtils.getConfig().masterCautionColor;
+        Component warning = Component.literal(WARNING_TEXT)
+                .setStyle(Style.EMPTY.withColor(TextColor.fromRgb(configuredColor)).withBold(true));
         int centerX = graphics.guiWidth() / 2;
         int centerY = graphics.guiHeight() / 2 - 40;
-        // GuiGraphics#drawString treats a zero alpha byte as "don't draw at
-        // all" (see ARGB.alpha(k) == 0 check) rather than defaulting to
-        // opaque — 0xFFFFFF has no alpha byte set, which was silently
-        // no-op'ing every draw call despite the trigger logic firing
-        // correctly (confirmed via diagnostic logging). Must be 0xFFFFFFFF.
         graphics.drawCenteredString(client.font, warning, centerX, centerY, 0xFFFFFFFF);
     }
 }
