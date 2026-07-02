@@ -23,7 +23,6 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec3;
@@ -264,33 +263,30 @@ public abstract class HudMixin {
         return row;
     }
 
-    // Flight time estimate. Elytra durability rolls every 20 ticks of
-    // continuous flight (FlightMath.DURABILITY_ROLL_INTERVAL_TICKS); Unbreaking
-    // (armor-slot branch, verified against unbreaking.json) gives a chance to
-    // avoid losing a point per roll: (2*level) / (10 + 5*(level-1)). Shows both
-    // the statistically-expected time and the guaranteed-floor (worst-case,
-    // fastest-possible-break) time when Unbreaking makes them differ — see
-    // issue #5.
+    // Time to ground: how long until the current glide slope actually meets
+    // terrain, i.e. groundDistance / descentRate — the real answer to "can I
+    // tab out for a bit." Deliberately NOT durability-based (that number
+    // doesn't change tick to tick with your angle, which is why the previous
+    // version of this line was stuck showing a near-constant value regardless
+    // of how you were flying). Shares FlightMath.findGroundDistance with the
+    // Range line (issue #6); Master Caution (#7) still uses the durability
+    // math separately, that estimate wasn't wrong, just wrong for this row.
     private static Component buildFlightTimeLine(LocalPlayer player) {
-        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (!chest.is(Items.ELYTRA) || !chest.isDamageableItem()) {
-            return Component.literal("  Flight time --").withStyle(ChatFormatting.DARK_GRAY);
+        double vy = player.getDeltaMovement().y;
+
+        MutableComponent row = Component.literal("  Time to ground ").withStyle(ChatFormatting.GRAY);
+        if (vy >= 0.0) {
+            row.append(Component.literal("-- (not descending)").withStyle(ChatFormatting.DARK_GRAY));
+            return row;
         }
 
-        int remainingDurability = chest.getMaxDamage() - chest.getDamageValue();
-        int unbreakingLevel = getEnchantmentLevel(player, chest, Enchantments.UNBREAKING);
-        double avoidChance = unbreakingLevel <= 0 ? 0.0 : (2.0 * unbreakingLevel) / (10.0 + 5.0 * (unbreakingLevel - 1));
-        double loseChance = 1.0 - avoidChance;
+        FlightMath.GroundReading ground = FlightMath.findGroundDistance(player);
+        double ticksToGround = ground.distance() / -vy;
 
-        double expectedTicks = remainingDurability / (loseChance / FlightMath.DURABILITY_ROLL_INTERVAL_TICKS);
-        double guaranteedFloorTicks = (double) remainingDurability * FlightMath.DURABILITY_ROLL_INTERVAL_TICKS;
-
-        MutableComponent row = Component.literal("  Flight time ~").withStyle(ChatFormatting.GRAY);
-        row.append(Component.literal(formatDuration(expectedTicks / 20.0)).withStyle(ChatFormatting.WHITE));
-        if (unbreakingLevel > 0) {
-            row.append(Component.literal(" (worst ").withStyle(ChatFormatting.DARK_GRAY));
-            row.append(Component.literal(formatDuration(guaranteedFloorTicks / 20.0)).withStyle(ChatFormatting.DARK_GRAY));
-            row.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+        row.append(Component.literal("~").withStyle(ChatFormatting.GRAY));
+        row.append(Component.literal(formatDuration(ticksToGround / 20.0)).withStyle(ChatFormatting.WHITE));
+        if (!ground.raycastHit()) {
+            row.append(Component.literal(" (sea level est.)").withStyle(ChatFormatting.DARK_GRAY));
         }
         return row;
     }
@@ -300,15 +296,6 @@ public abstract class HudMixin {
         int minutes = totalSeconds / 60;
         int secs = totalSeconds % 60;
         return String.format("%d:%02d", minutes, secs);
-    }
-
-    private static int getEnchantmentLevel(LocalPlayer player, ItemStack stack, net.minecraft.resources.ResourceKey<Enchantment> enchantmentKey) {
-        try {
-            Holder<Enchantment> holder = player.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(enchantmentKey);
-            return stack.getEnchantments().getLevel(holder);
-        } catch (RuntimeException e) {
-            return 0;
-        }
     }
 
     /** Sums (base + perLevelAboveFirst*(level-1)) across every worn armor piece that has this enchantment. */
