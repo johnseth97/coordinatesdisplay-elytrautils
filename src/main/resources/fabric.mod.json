@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "coordinatesdisplay_elytrautils",
   "version": "${version}",
-  "name": "CoordinatesDisplay ElytraUtils",
+  "name": "ElytraUtils",
   "description": "Adds elytra flight telemetry to the CoordinatesDisplay HUD.",
   "authors": ["johnseth97"],
   "license": "MIT",

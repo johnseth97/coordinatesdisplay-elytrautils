@@ -11,5 +11,7 @@ public class ElytraUtilsConfig implements BConfig {
     // rendering (0xFF in the top byte), regardless of what's stored here, so
     // a user picking a color here can't reintroduce the zero-alpha bug that
     // silently no-op'd every draw call before it was fixed.
-    public int masterCautionColor = 0xFFFFFF;
+    // Default matches vanilla ChatFormatting.RED (0xFF5555), the color the
+    // warning used before it became configurable.
+    public int masterCautionColor = 0xFF5555;
 }

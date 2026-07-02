@@ -18,7 +18,7 @@ import net.minecraft.network.chat.Component;
 public class ElytraUtilsConfigScreen extends BOptionScreen {
 
     public ElytraUtilsConfigScreen(Screen parent) {
-        super(parent, Component.literal("CoordinatesDisplay ElytraUtils"));
+        super(parent, Component.literal("ElytraUtils"));
         CoordinatesDisplayElytraUtils.CONFIG.cacheConfig();
     }
 
