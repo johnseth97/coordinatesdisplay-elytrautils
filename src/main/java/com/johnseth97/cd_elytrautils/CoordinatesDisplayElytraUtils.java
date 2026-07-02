@@ -25,6 +25,9 @@ public final class CoordinatesDisplayElytraUtils implements ClientModInitializer
     @Override
     public void onInitializeClient() {
         CONFIG = BConfigHandler.registerConfig(ElytraUtilsConfig.class);
+        // Register the attitude display before Master Caution so the caution
+        // alert draws last (on top of the instruments).
+        FlightInstrumentOverlay.register();
         MasterCautionOverlay.register();
         LOGGER.info("[{}] initialized", MOD_ID);
     }

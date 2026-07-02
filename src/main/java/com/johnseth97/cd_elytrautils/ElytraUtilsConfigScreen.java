@@ -96,6 +96,32 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
                 "cd_elytrautils.config.show_flight_time_line",
                 config.showFlightTimeLine,
                 val -> config.showFlightTimeLine = val));
+
+        addConfigLine(new BSpacingEntry());
+
+        // Flight instruments (issue #10)
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.show_flight_instruments",
+                config.showFlightInstruments,
+                val -> config.showFlightInstruments = val));
+        addConfigLine(new BDoubleSlider(
+                "cd_elytrautils.config.flight_instrument_scale",
+                2.0, 12.0,
+                config.flightInstrumentPixelsPerDegree,
+                1,
+                val -> config.flightInstrumentPixelsPerDegree = val));
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.show_pitch_ladder",
+                config.showPitchLadder,
+                val -> config.showPitchLadder = val));
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.show_flight_path_marker",
+                config.showFlightPathMarker,
+                val -> config.showFlightPathMarker = val));
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.show_aoa_indicator",
+                config.showAoaIndicator,
+                val -> config.showAoaIndicator = val));
     }
 
     @Override

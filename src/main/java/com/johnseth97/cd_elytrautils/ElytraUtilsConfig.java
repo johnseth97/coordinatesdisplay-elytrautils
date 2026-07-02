@@ -32,4 +32,15 @@ public class ElytraUtilsConfig implements BConfig {
     public boolean showImpactLine = true;
     public boolean showRangeLine = true;
     public boolean showFlightTimeLine = true;
+
+    // Fighter-jet attitude display (issue #10): a screen-centered pitch
+    // ladder, flight path marker, and AoA indexer, shown only while actually
+    // fall-flying. Gated by showElytraOverlay like everything else, plus its
+    // own master toggle and per-element toggles. pixelsPerDegree scales the
+    // whole display (how far one degree of pitch moves the ladder on screen).
+    public boolean showFlightInstruments = true;
+    public double flightInstrumentPixelsPerDegree = 4.0;
+    public boolean showPitchLadder = true;
+    public boolean showFlightPathMarker = true;
+    public boolean showAoaIndicator = true;
 }

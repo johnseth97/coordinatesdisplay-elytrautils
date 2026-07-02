@@ -2,6 +2,8 @@ package com.johnseth97.cd_elytrautils.mixin;
 
 import com.johnseth97.cd_elytrautils.CoordinatesDisplayElytraUtils;
 import com.johnseth97.cd_elytrautils.ElytraUtilsConfig;
+import com.johnseth97.cd_elytrautils.FlightColors;
+import com.johnseth97.cd_elytrautils.FlightConstants;
 import com.johnseth97.cd_elytrautils.FlightMath;
 import dev.boxadactle.boxlib.layouts.RenderingLayout;
 import dev.boxadactle.boxlib.layouts.component.LayoutContainerComponent;
@@ -88,57 +90,13 @@ public abstract class HudMixin {
         cir.setReturnValue(wrapper);
     }
 
-    // Bucket boundaries and gradient targets below are derived by decompiling
-    // the actual vanilla physics (LivingEntity#updateFallFlyingMovement,
-    // FireworkRocketEntity#tick's boost term against an attached fall-flying
-    // entity) and numerically simulating them, rather than assumed — see
-    // GitHub issues #2 and #3 for the full derivation and simulation method.
-
-    // CLIMB / GLIDE / DIVE pitch-bucket edges. STALL is no longer one of
-    // these — see STALL_HORIZONTAL_SPEED below. There is no APPROACH bucket:
-    // it added a static-color label with no real signal of its own once the
-    // Impact line (issue #4) already covers "what happens if I touch down
-    // now" directly — pitch >= GLIDE_RED_PITCH goes straight to DIVE.
-    private static final float CLIMB_UPPER_PITCH = -8f;
-    private static final float GLIDE_RED_PITCH = 30f;
-
-    // STALL keys off horizontal airspeed, not pitch (issue #9). A pitch-only
-    // check conflated the approach-to-stall region with legitimately good
-    // climb angles — the -34 deg ideal climb angle (see IDEAL_CLIMB_PITCH)
-    // sits well past where the old pitch-only STALL threshold used to fire.
-    // ~0.35 blocks/tick is the simulated steady-state minimum airspeed
-    // confirmed in #3's derivation (matches the wiki's ~7.2 m/s claim); 0.4
-    // gives a small buffer above that asymptote.
-    private static final float STALL_HORIZONTAL_SPEED = 0.4f;
-
-    // DIVE's danger gradient is keyed on descent rate (vy), not pitch — pitch
-    // only gates entry into the DIVE bucket itself (pitch >= GLIDE_RED_PITCH).
-    // -0.45 is the exact threshold the old standalone "LAND NOW" override used
-    // (issue #8); kept here as the gradient's red endpoint so removing that
-    // override doesn't lose its meaning.
-    private static final float DIVE_GREEN_VY = -0.05f;
-    private static final float DIVE_RED_VY = -0.45f;
-
-    // Ideal pitch to hold during a rocket's burn to maximize peak altitude
-    // gained from that single burst (simulated: boost formula + burn duration
-    // + post-burn glide, scanned across pitch). -34 deg sits just past the
-    // -30 deg stall-onset threshold — the best climb angle is deliberately
-    // right at the edge of losing airspeed, not comfortably inside it.
-    private static final float IDEAL_CLIMB_PITCH = -34f;
-    private static final float CLIMB_GRADIENT_HALF_WIDTH = 25f;
-
-    // Ideal pitch for maximum glide ratio (distance per altitude lost) is
-    // dead level; the gradient's speed-optimal end is the pitch nearest the
-    // maximum simulated steady-state horizontal speed (~+53 deg), trimmed to
-    // +30 deg since that's already ~93% of max speed and more likely to be
-    // where players actually fly.
-    private static final float IDEAL_GLIDE_PITCH = 0f;
+    // Bucket boundaries and gradient targets are derived from decompiled +
+    // simulated vanilla physics; they were promoted to FlightConstants /
+    // FlightColors so the fighter-jet instrument overlay (issue #10) draws its
+    // angle brackets from the same numbers this text row scores against. See
+    // GitHub issues #2 and #3 for the derivation.
 
     private static final float ARROW_TOLERANCE = 3f;
-
-    private static final int COLOR_RED = 0xFF5555;
-    private static final int COLOR_ORANGE = 0xFFAA00;
-    private static final int COLOR_GREEN = 0x55FF55;
 
     // Impact damage estimate. Derived by decompiling LivingEntity's actual
     // damage formulas — not guessed:
@@ -191,13 +149,13 @@ public abstract class HudMixin {
             // always fire — show the same climb-angle gradient CLIMB uses
             // instead, since that's exactly what matters before jumping: is
             // this look angle a good one to launch and boost into?
-            status = gradientStatus("LAUNCH", pitch, IDEAL_CLIMB_PITCH, CLIMB_GRADIENT_HALF_WIDTH, true);
-        } else if (horizontalSpeed < STALL_HORIZONTAL_SPEED) {
-            status = coloredText("⚠ STALL", COLOR_RED);
-        } else if (pitch < CLIMB_UPPER_PITCH) {
-            status = gradientStatus("CLIMB", pitch, IDEAL_CLIMB_PITCH, CLIMB_GRADIENT_HALF_WIDTH, true);
-        } else if (pitch < GLIDE_RED_PITCH) {
-            status = gradientStatus("GLIDE", pitch, IDEAL_GLIDE_PITCH, GLIDE_RED_PITCH, false);
+            status = gradientStatus("LAUNCH", pitch, FlightConstants.IDEAL_CLIMB_PITCH, FlightConstants.CLIMB_GRADIENT_HALF_WIDTH, true);
+        } else if (horizontalSpeed < FlightConstants.STALL_HORIZONTAL_SPEED) {
+            status = coloredText("⚠ STALL", FlightColors.COLOR_RED);
+        } else if (pitch < FlightConstants.CLIMB_UPPER_PITCH) {
+            status = gradientStatus("CLIMB", pitch, FlightConstants.IDEAL_CLIMB_PITCH, FlightConstants.CLIMB_GRADIENT_HALF_WIDTH, true);
+        } else if (pitch < FlightConstants.GLIDE_RED_PITCH) {
+            status = gradientStatus("GLIDE", pitch, FlightConstants.IDEAL_GLIDE_PITCH, FlightConstants.GLIDE_RED_PITCH, false);
         } else {
             status = diveGradientStatus(vy);
         }
@@ -328,7 +286,7 @@ public abstract class HudMixin {
     }
 
     private static Component impactHeartsText(String axisLabel, float hearts) {
-        int color = hearts <= 0f ? COLOR_GREEN : hearts >= 10f ? COLOR_RED : threeStopGradient(hearts / 10f);
+        int color = hearts <= 0f ? FlightColors.COLOR_GREEN : hearts >= 10f ? FlightColors.COLOR_RED : FlightColors.threeStopGradient(hearts / 10f);
         return coloredText(String.format("%s:%.1f❤", axisLabel, hearts), color);
     }
 
@@ -341,9 +299,7 @@ public abstract class HudMixin {
      */
     private static Component gradientStatus(String label, float pitch, float idealPitch, float span, boolean symmetric) {
         float signedOffset = pitch - idealPitch;
-        float distance = symmetric ? Math.abs(signedOffset) : Math.max(0f, signedOffset);
-        float t = clamp01(distance / span);
-        int color = threeStopGradient(t);
+        int color = FlightColors.gradientColor(pitch, idealPitch, span, symmetric);
 
         // Pitch is more positive (more nose-down) than ideal in both the climb
         // and glide cases, so "pitch up to correct" always means the same
@@ -362,39 +318,14 @@ public abstract class HudMixin {
 
     /** DIVE's danger gradient: green at a mild descent rate, red at the old LAND NOW threshold. See issue #8. */
     private static Component diveGradientStatus(double vy) {
-        float t = clamp01((float) ((DIVE_GREEN_VY - vy) / (DIVE_GREEN_VY - DIVE_RED_VY)));
-        int color = threeStopGradient(t);
+        float t = FlightColors.clamp01((float) ((FlightConstants.DIVE_GREEN_VY - vy)
+                / (FlightConstants.DIVE_GREEN_VY - FlightConstants.DIVE_RED_VY)));
+        int color = FlightColors.diveGradientColor(vy);
         String arrow = t > 0.5f ? "▲" : "↓";
         return coloredText(arrow + " DIVE", color);
     }
 
     private static Component coloredText(String text, int rgb) {
         return Component.literal(text).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(rgb)));
-    }
-
-    private static int threeStopGradient(float t) {
-        t = clamp01(t);
-        if (t < 0.5f) {
-            return lerpColor(COLOR_GREEN, COLOR_ORANGE, t / 0.5f);
-        }
-        return lerpColor(COLOR_ORANGE, COLOR_RED, (t - 0.5f) / 0.5f);
-    }
-
-    private static int lerpColor(int from, int to, float t) {
-        t = clamp01(t);
-        int fr = (from >> 16) & 0xFF;
-        int fg = (from >> 8) & 0xFF;
-        int fb = from & 0xFF;
-        int tr = (to >> 16) & 0xFF;
-        int tg = (to >> 8) & 0xFF;
-        int tb = to & 0xFF;
-        int r = Math.round(fr + (tr - fr) * t);
-        int g = Math.round(fg + (tg - fg) * t);
-        int b = Math.round(fb + (tb - fb) * t);
-        return (r << 16) | (g << 8) | b;
-    }
-
-    private static float clamp01(float v) {
-        return Math.max(0f, Math.min(1f, v));
     }
 }

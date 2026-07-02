@@ -11,5 +11,10 @@
   "cd_elytrautils.config.custom_barometric_y": "Barometric Y: %s",
   "cd_elytrautils.config.show_impact_line": "Show Impact Line: %s",
   "cd_elytrautils.config.show_range_line": "Show Range Line: %s",
-  "cd_elytrautils.config.show_flight_time_line": "Show Flight Time Line: %s"
+  "cd_elytrautils.config.show_flight_time_line": "Show Flight Time Line: %s",
+  "cd_elytrautils.config.show_flight_instruments": "Show Flight Instruments: %s",
+  "cd_elytrautils.config.flight_instrument_scale": "Instrument Scale: %s",
+  "cd_elytrautils.config.show_pitch_ladder": "Show Pitch Ladder: %s",
+  "cd_elytrautils.config.show_flight_path_marker": "Show Flight Path Marker: %s",
+  "cd_elytrautils.config.show_aoa_indicator": "Show AoA Indicator: %s"
 }
