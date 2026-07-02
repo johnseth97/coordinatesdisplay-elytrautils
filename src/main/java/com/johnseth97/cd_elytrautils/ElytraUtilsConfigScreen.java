@@ -42,7 +42,12 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
                 0.0, 500.0,
                 config.masterCautionThresholdBlocks,
                 0,
-                val -> config.masterCautionThresholdBlocks = val));
+                val -> config.masterCautionThresholdBlocks = val) {
+            @Override
+            protected String roundNumber(Double input) {
+                return input <= 0.0 ? "Off" : super.roundNumber(input);
+            }
+        });
         addConfigLine(new BColorPickerButton(
                 "cd_elytrautils.config.master_caution_color",
                 this,

@@ -1,14 +1,14 @@
 {
   "cd_elytrautils.config.show_overlay": "Show Elytra Overlay: %s",
   "cd_elytrautils.config.master_caution_color": "Master Caution Color: %s",
-  "cd_elytrautils.config.master_caution_threshold": "Master Caution Threshold (blocks, 0 = off): %s",
+  "cd_elytrautils.config.master_caution_threshold": "Caution Threshold: %s",
   "cd_elytrautils.config.altimeter_mode": "Altimeter Mode: %s",
   "cd_elytrautils.config.altimeter_mode.radar": "Radar",
   "cd_elytrautils.config.altimeter_mode.barometric": "Barometric",
   "cd_elytrautils.config.altimeter_mode.auto": "Auto",
-  "cd_elytrautils.config.auto_switchover_height": "Auto Switchover Height (blocks AGL): %s",
-  "cd_elytrautils.config.barometric_use_sea_level": "Barometric Reference is Sea Level: %s",
-  "cd_elytrautils.config.custom_barometric_y": "Custom Barometric Reference Y: %s",
+  "cd_elytrautils.config.auto_switchover_height": "Switchover Height: %s",
+  "cd_elytrautils.config.barometric_use_sea_level": "Barometric = Sea Level: %s",
+  "cd_elytrautils.config.custom_barometric_y": "Barometric Y: %s",
   "cd_elytrautils.config.show_impact_line": "Show Impact Line: %s",
   "cd_elytrautils.config.show_range_line": "Show Range Line: %s",
   "cd_elytrautils.config.show_flight_time_line": "Show Flight Time Line: %s"
