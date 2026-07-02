@@ -45,6 +45,16 @@ public final class FlightColors {
         return ((alpha & 0xFF) << 24) | (rgb & 0xFFFFFF);
     }
 
+    /**
+     * Multiplies two 0-255 alpha values (e.g. an immersive-height fade alpha
+     * and the user's configured instrument alpha), so a user-set
+     * transparency composes correctly with per-element fading rather than
+     * one silently overriding the other.
+     */
+    public static int combineAlpha(int alpha1, int alpha2) {
+        return Math.round((alpha1 & 0xFF) * ((alpha2 & 0xFF) / 255f));
+    }
+
     public static float clamp01(float v) {
         return Math.max(0f, Math.min(1f, v));
     }

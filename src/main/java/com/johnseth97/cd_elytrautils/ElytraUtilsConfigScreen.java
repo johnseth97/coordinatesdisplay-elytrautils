@@ -113,7 +113,7 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
         addConfigLine(new BColorPickerButton(
                 "cd_elytrautils.config.flight_instrument_color",
                 this,
-                false,
+                true,
                 config.flightInstrumentColor,
                 val -> config.flightInstrumentColor = val));
         addConfigLine(new BBooleanButton(

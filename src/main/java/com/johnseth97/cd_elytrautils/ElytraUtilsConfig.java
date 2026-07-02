@@ -48,15 +48,19 @@ public class ElytraUtilsConfig implements BConfig {
     // the original fixed layout.
     public double flightInstrumentScale = 1.0;
 
-    // RGB only, same convention as masterCautionColor (alpha forced opaque at
-    // render time). Applied uniformly to the display's structural elements
-    // (ladder, horizon, boresight, tape lines/labels/boxes, bearing tape) —
-    // real HUD combiner glass renders everything in one phosphor color, so
-    // unifying these into one user-configurable color is more authentic, not
-    // less. The physics-derived signal colors (climb/dive gradient, STALL,
-    // reference marks) stay independent of this: they carry safety meaning
-    // (green/orange/red), not just aesthetics, so they aren't user-overridden.
-    public int flightInstrumentColor = 0xFFFF55;
+    // Full ARGB, unlike masterCautionColor — this one's BColorPickerButton is
+    // constructed with alpha support enabled (see ElytraUtilsConfigScreen), a
+    // deliberate exception to the "RGB only" convention elsewhere: the user
+    // explicitly wants a HUD-brightness-style transparency control, not just
+    // hue. FlightInstrumentOverlay extracts the alpha byte and composes it
+    // into every color it draws (structural AND the physics-derived signal
+    // colors — reference marks, STALL, the FPM/AoA gradient tint), so the
+    // whole display can be dimmed as one unit; only the hue stays fixed for
+    // the signal colors, never the RGB itself. Default's top byte must stay
+    // 0xFF (fully opaque) — an all-zero default would render nothing, unlike
+    // the masterCautionColor pattern where alpha is forced at render time
+    // regardless of what's stored.
+    public int flightInstrumentColor = 0xFFFFFF55;
 
     public boolean showPitchLadder = true;
     public boolean showFlightPathMarker = true;
