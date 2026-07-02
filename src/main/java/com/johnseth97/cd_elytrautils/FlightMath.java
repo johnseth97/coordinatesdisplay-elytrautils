@@ -121,9 +121,31 @@ public final class FlightMath {
         return raycastGroundDistance(player, CoordinatesDisplayElytraUtils.getConfig());
     }
 
-    /** Ticks remaining before ground impact at the current descent rate, or -1 if not descending. */
+    /**
+     * Ticks remaining before ground impact at the current descent rate, or -1
+     * if not descending meaningfully.
+     *
+     * <p>The "meaningfully" part matters: this only projects an impact time
+     * once {@code vy} is past {@link FlightConstants#DIVE_GREEN_VY}, the same
+     * "mild, non-dangerous descent" boundary the text HUD's DIVE gradient
+     * already uses — not just {@code vy >= 0}. Without that floor, {@code
+     * distance / -vy} diverges toward infinity as {@code vy} approaches zero
+     * from below, and Master Caution compares this against a *finite*
+     * durability budget: once the projected time exceeds even a full-
+     * durability elytra's tick count, "durability runs out before ground"
+     * flips true and the warning fires — despite barely losing altitude,
+     * which is the safest state, not the most dangerous one. This isn't a
+     * rare corner case: rocket-boost-spam flying near the ground oscillates
+     * {@code vy} across zero many times a second (each boost kicks it
+     * positive, gravity pulls it back through zero before the next boost),
+     * so the divergence was hit constantly at exactly the altitude/playstyle
+     * where a false "ELYTRA DESTRUCTION IMMINENT" is most alarming. Every
+     * consumer re-evaluates every tick, so there's no cost to treating "not
+     * meaningfully descending right now" the same as "not descending" — next
+     * tick recomputes from scratch regardless.
+     */
     public static double ticksToGround(LocalPlayer player, double vy) {
-        if (vy >= 0.0) {
+        if (vy >= FlightConstants.DIVE_GREEN_VY) {
             return -1.0;
         }
         GroundReading ground = findGroundDistance(player);
