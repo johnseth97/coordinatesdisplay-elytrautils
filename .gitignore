@@ -1,8 +1,10 @@
 # Gradle / Java
 .gradle/
 build/
+bin/
 out/
 **/build/
+**/bin/
 **/out/
 **/*.class
 

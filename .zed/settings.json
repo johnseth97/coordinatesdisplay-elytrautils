@@ -6,7 +6,7 @@
       "settings": {
         "initialization_options": {
           "workspaceFolders": [
-            "${env:DEVFLAGS_MOD_WORKSPACE_URI}",
+            "${env:MOD_WORKSPACE_URI}",
           ],
         },
       },

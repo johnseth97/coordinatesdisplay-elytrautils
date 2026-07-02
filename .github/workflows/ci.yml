@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '21'
           cache: gradle
 
       - uses: gradle/actions/setup-gradle@v3
@@ -25,14 +25,6 @@ jobs:
       - name: Strip local JDK path from gradle.properties
         run: sed -i '/org.gradle.java.home/d' gradle.properties
 
-      # Cache the MC client jar so it isn't re-downloaded on every run.
-      # Key is fixed to the version — the jar never changes for a given release.
-      - name: Cache Minecraft client jar
-        uses: actions/cache@v4
-        with:
-          path: .gradle/minecraft
-          key: minecraft-26.1.2-client
-
       - name: Build
         run: ./gradlew clean build
 
@@ -40,5 +32,5 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: devflags-fabric
+          name: mod-jar
           path: build/libs/*.jar

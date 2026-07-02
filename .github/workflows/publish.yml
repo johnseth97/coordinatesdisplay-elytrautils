@@ -11,6 +11,12 @@ on:
         required: true
         type: string
 
+# Modrinth/CurseForge jobs only run when their *_PROJECT_ID repo variable is
+# set. GitHub release always runs. Game versions/loaders come from the
+# GAME_VERSIONS repo variable (newline-separated) or default to the value below.
+env:
+  DEFAULT_GAME_VERSIONS: "1.21.11"
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -29,7 +35,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "25"
+          java-version: "21"
           cache: gradle
 
       - name: Set up Gradle
@@ -38,12 +44,6 @@ jobs:
       # gradle.properties hardcodes a local macOS JDK path — strip it for CI.
       - name: Strip local JDK path from gradle.properties
         run: sed -i '/org.gradle.java.home/d' gradle.properties
-
-      - name: Cache Minecraft client jar
-        uses: actions/cache@v4
-        with:
-          path: .gradle/minecraft
-          key: minecraft-26.1.2-client
 
       - name: Resolve version
         id: resolve
@@ -82,7 +82,7 @@ jobs:
           fi
 
           {
-            echo "## DevFlags ${RELEASE_VERSION}"
+            echo "## ${RELEASE_VERSION}"
             echo
             echo "**Changes:**"
             echo
@@ -149,7 +149,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           files: build/libs/*.jar
-          name: DevFlags ${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_VERSION }}
           version: ${{ env.RELEASE_VERSION }}
           version-type: release
           changelog: ${{ env.CHANGELOG_BODY }}
@@ -189,14 +189,13 @@ jobs:
           modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           files: build/libs/*.jar
-          name: DevFlags ${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_VERSION }}
           version: ${{ env.RELEASE_VERSION }}
           version-type: release
           changelog: ${{ env.CHANGELOG_BODY }}
           loaders: |
             fabric
-          game-versions: |
-            26.1.2
+          game-versions: ${{ vars.GAME_VERSIONS || env.DEFAULT_GAME_VERSIONS }}
 
   publish-curseforge:
     needs: prepare
@@ -233,11 +232,10 @@ jobs:
           curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           files: build/libs/*.jar
-          name: DevFlags ${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_VERSION }}
           version: ${{ env.RELEASE_VERSION }}
           version-type: release
           changelog: ${{ env.CHANGELOG_BODY }}
           loaders: |
             fabric
-          game-versions: |
-            26.1.2
+          game-versions: ${{ vars.GAME_VERSIONS || env.DEFAULT_GAME_VERSIONS }}

@@ -1,198 +1,48 @@
 plugins {
-    id 'java'
+    id 'fabric-loom' version '1.17.13'
 }
 
 version = project.mod_version
 group = project.maven_group
 base.archivesName = project.archives_base_name
 
-def minecraftVersion = project.minecraft_version
-def loaderVersion = project.loader_version
-def modMenuVersion = "18.0.0-beta.1"
-
-def userHome = System.getProperty('user.home')
-def prismLibs = "${userHome}/Library/Application Support/PrismLauncher/libraries"
-def prismInstance = "${userHome}/Library/Application Support/PrismLauncher/instances/26.1.2 Dev Flags Enabled/minecraft"
-def prismMods = "${prismInstance}/mods"
-
-def prismMcJar = file("${prismLibs}/com/mojang/minecraft/${minecraftVersion}/minecraft-${minecraftVersion}-client.jar")
-def usingPrism = prismMcJar.exists()
-
-// CI path for the MC client jar downloaded from Mojang's CDN.
-def ciMcJar = file("${rootDir}/.gradle/minecraft/minecraft-${minecraftVersion}-client.jar")
-
 repositories {
-    maven { url 'https://maven.fabricmc.net/' }
-    maven { url 'https://libraries.minecraft.net/' }
-    maven { url 'https://maven.terraformersmc.com/releases/' }
-    mavenCentral()
-}
-
-if (!usingPrism) {
-    tasks.register('downloadMinecraftJar') {
-        outputs.file ciMcJar
-        onlyIf { !ciMcJar.exists() }
-
-        doLast {
-            ciMcJar.parentFile.mkdirs()
-
-            def manifest = new groovy.json.JsonSlurper().parse(
-                new URL('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
-            )
-
-            def entry = manifest.versions.find { it.id == minecraftVersion }
-            if (!entry) {
-                throw new GradleException("MC ${minecraftVersion} not found in Mojang version manifest")
-            }
-
-            def meta = new groovy.json.JsonSlurper().parse(new URL(entry.url))
-            new URL(meta.downloads.client.url).withInputStream { is ->
-                ciMcJar.withOutputStream { os -> os << is }
-            }
-
-            logger.lifecycle("[DevFlags] Downloaded MC ${minecraftVersion} client jar from Mojang CDN")
-        }
-    }
-
-    tasks.named('compileJava').configure {
-        dependsOn 'downloadMinecraftJar'
+    // Modrinth Maven — resolve mods you compile/mixin against with:
+    //   modImplementation "maven.modrinth:<project-slug>:<version-id>"
+    exclusiveContent {
+        forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup 'maven.modrinth' }
     }
 }
 
 dependencies {
-    if (usingPrism) {
-        def p = prismLibs
-        def mixinJar = "${p}/net/fabricmc/sponge-mixin/0.17.2+mixin.0.8.7/sponge-mixin-0.17.2+mixin.0.8.7.jar"
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-        compileOnly files("${p}/com/mojang/minecraft/${minecraftVersion}/minecraft-${minecraftVersion}-client.jar")
-        compileOnly files("${p}/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar")
-        compileOnly files("${p}/net/fabricmc/fabric-loader/${loaderVersion}/fabric-loader-${loaderVersion}.jar")
-        compileOnly files(mixinJar)
-        compileOnly files("${p}/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar")
-
-        // Fabric API modules needed by optional client helpers/keybinds.
-        compileOnly files("${prismMods}/fabric-api-0.149.1+26.1.2.jar")
-
-        // ModMenu API for DevFlagsModMenu.
-        compileOnly files("${prismMods}/modmenu-${modMenuVersion}.jar")
-
-        annotationProcessor files(mixinJar)
-        annotationProcessor files("${p}/org/ow2/asm/asm/9.9/asm-9.9.jar")
-        annotationProcessor files("${p}/org/ow2/asm/asm-tree/9.9/asm-tree-9.9.jar")
-        annotationProcessor files("${p}/org/ow2/asm/asm-commons/9.9/asm-commons-9.9.jar")
-        annotationProcessor files("${p}/org/ow2/asm/asm-analysis/9.9/asm-analysis-9.9.jar")
-        annotationProcessor files("${p}/org/ow2/asm/asm-util/9.9/asm-util-9.9.jar")
-    } else {
-        compileOnly files(ciMcJar)
-        compileOnly 'com.mojang:brigadier:1.3.10'
-        compileOnly "net.fabricmc:fabric-loader:${loaderVersion}"
-        compileOnly 'net.fabricmc:sponge-mixin:0.17.2+mixin.0.8.7'
-        compileOnly 'org.slf4j:slf4j-api:2.0.17'
-
-        compileOnly "net.fabricmc.fabric-api:fabric-api:0.149.1+${minecraftVersion}"
-        compileOnly "com.terraformersmc:modmenu:${modMenuVersion}"
-
-        annotationProcessor 'net.fabricmc:sponge-mixin:0.17.2+mixin.0.8.7'
-        annotationProcessor 'org.ow2.asm:asm:9.9'
-        annotationProcessor 'org.ow2.asm:asm-tree:9.9'
-        annotationProcessor 'org.ow2.asm:asm-commons:9.9'
-        annotationProcessor 'org.ow2.asm:asm-analysis:9.9'
-        annotationProcessor 'org.ow2.asm:asm-util:9.9'
-    }
+    // We mixin into CoordinatesDisplay's HUD render pipeline; BoxLib is its
+    // required dependency (layout/rendering helpers + config system). Neither
+    // is bundled into our jar — both are declared `required` in
+    // fabric.mod.json so Fabric Loader enforces them at launch.
+    modImplementation "maven.modrinth:coordinates-display:${project.coordinatesdisplay_version}"
+    modImplementation "maven.modrinth:boxlib:${project.boxlib_version}"
 }
-
-// ── Flag description codegen ──────────────────────────────────────────────────
-// Reads docs/flags/*.md, extracts **Property:** key and ## Description text,
-// and emits DevFlagDescriptions.java into the build directory so the markdown
-// files are the single source of truth for tooltip text.
-
-def generatedSrcDir = layout.buildDirectory.dir('generated/sources/devflags/main/java').get().asFile
-
-sourceSets.main.java.srcDirs += [generatedSrcDir]
-
-tasks.register('generateFlagDescriptions') {
-    def docsDir = file('docs/flags')
-    def outputFile = file("${generatedSrcDir}/com/johnseth97/devflags/DevFlagDescriptions.java")
-
-    inputs.dir docsDir
-    outputs.file outputFile
-
-    doLast {
-        def descriptions = [:]
-
-        docsDir.listFiles()?.findAll { it.name.endsWith('.md') }?.sort { it.name }?.each { mdFile ->
-            def lines = mdFile.readLines()
-            def key = null
-            def descLines = []
-            def inDesc = false
-
-            for (line in lines) {
-                if (line.startsWith('**Property:**')) {
-                    def m = (line =~ /`(MC_DEBUG_[^`]+)`/)
-                    if (m.find()) key = m.group(1)
-                }
-                if (line.trim() == '## Description') { inDesc = true; continue }
-                if (inDesc && line.startsWith('##')) inDesc = false
-                if (inDesc && !line.trim().isEmpty()) descLines << line.trim()
-            }
-
-            if (key) {
-                descriptions[key] = descLines.join(' ')
-                    .replace('\\', '\\\\')
-                    .replace('"', '\\"')
-            }
-        }
-
-        def sb = new StringBuilder()
-        sb << 'package com.johnseth97.devflags;\n\n'
-        sb << 'import java.util.HashMap;\n'
-        sb << 'import java.util.Map;\n'
-        sb << 'import net.minecraft.network.chat.Component;\n\n'
-        sb << 'public final class DevFlagDescriptions {\n\n'
-        sb << '    private static final Map<String, Component> DESCRIPTIONS = new HashMap<>();\n\n'
-        sb << '    static {\n'
-        descriptions.sort { a, b -> a.key <=> b.key }.each { k, v ->
-            sb << "        put(\"${k}\", \"${v}\");\n"
-        }
-        sb << '    }\n\n'
-        sb << '    private DevFlagDescriptions() {}\n\n'
-        sb << '    private static void put(String key, String description) {\n'
-        sb << '        DESCRIPTIONS.put(key, Component.literal(description));\n'
-        sb << '    }\n\n'
-        sb << '    public static Component get(String key) {\n'
-        sb << '        return DESCRIPTIONS.getOrDefault(key, Component.literal("No description available."));\n'
-        sb << '    }\n'
-        sb << '}\n'
-
-        outputFile.parentFile.mkdirs()
-        outputFile.text = sb.toString()
-        logger.lifecycle("[DevFlags] Generated DevFlagDescriptions.java (${descriptions.size()} entries)")
-    }
-}
-
-tasks.named('compileJava').configure { dependsOn 'generateFlagDescriptions' }
-
-// ──────────────────────────────────────────────────────────────────────────────
 
 processResources {
-    inputs.property "version", project.version
-    filteringCharset "UTF-8"
-
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+    inputs.property 'version', project.version
+    filteringCharset 'UTF-8'
+    filesMatching('fabric.mod.json') {
+        expand version: project.version
     }
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 25
-    options.compilerArgs += ["-Xlint:-options"]
+    // Minecraft 1.21.x runs on Java 21. Match your target MC's Java version.
+    options.release = 21
 }
 
 java {
-    sourceCompatibility = JavaVersion.toVersion(25)
-    targetCompatibility = JavaVersion.toVersion(25)
-}
-
-jar {
-    archiveFileName = "${project.archives_base_name}-${project.version}.jar"
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
