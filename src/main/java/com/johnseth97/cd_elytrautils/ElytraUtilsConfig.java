@@ -43,4 +43,14 @@ public class ElytraUtilsConfig implements BConfig {
     public boolean showPitchLadder = true;
     public boolean showFlightPathMarker = true;
     public boolean showAoaIndicator = true;
+    public boolean showBearingTape = true;
+    public boolean showAirspeedTape = true;
+    public boolean showAltitudeTape = true;
+
+    // Half-height, in pixels from screen center, of the simulated "windshield"
+    // the vertically-tracking instruments (pitch ladder, airspeed/altitude
+    // tapes) are visible through. They fade out approaching this limit rather
+    // than hard-clipping or tracking the full screen height, so the display
+    // reads like a real HUD's limited glass extent.
+    public double immersiveHudHeightPixels = 120.0;
 }

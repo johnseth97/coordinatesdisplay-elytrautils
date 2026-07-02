@@ -88,8 +88,37 @@ public final class FlightMath {
     }
 
     private static double barometricDistance(LocalPlayer player, ElytraUtilsConfig config) {
-        double referenceY = config.barometricUseSeaLevel ? player.level().getSeaLevel() : config.customBarometricY;
-        return Math.max(0.0, player.position().y - referenceY);
+        return Math.max(0.0, player.position().y - referenceY(player, config));
+    }
+
+    private static double referenceY(LocalPlayer player, ElytraUtilsConfig config) {
+        return config.barometricUseSeaLevel ? player.level().getSeaLevel() : config.customBarometricY;
+    }
+
+    /**
+     * Barometric altitude above the configured reference (sea level or a
+     * custom Y), for the BALT tape (issue #10). Unlike {@link
+     * #barometricDistance}, this is not clamped to zero — an altitude readout
+     * below the reference (e.g. a ravine below sea level) should read
+     * negative, not floor at the surface the way a "distance remaining"
+     * quantity does.
+     */
+    public static double barometricAltitude(LocalPlayer player) {
+        ElytraUtilsConfig config = CoordinatesDisplayElytraUtils.getConfig();
+        return player.position().y - referenceY(player, config);
+    }
+
+    /**
+     * Pure radar-altimeter reading for the RALT box (issue #10): straight-down
+     * raycast only, with no barometric substitution on miss. Unlike {@link
+     * #findGroundDistance} — which exists for safety/range math that must
+     * always return *some* number — a dedicated RALT readout should show "no
+     * lock" rather than silently displaying a barometric estimate as if it
+     * were a raycast hit. Check {@link GroundReading#raycastHit()} before
+     * trusting the distance.
+     */
+    public static GroundReading radarAltitude(LocalPlayer player) {
+        return raycastGroundDistance(player, CoordinatesDisplayElytraUtils.getConfig());
     }
 
     /** Ticks remaining before ground impact at the current descent rate, or -1 if not descending. */

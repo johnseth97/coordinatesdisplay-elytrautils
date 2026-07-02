@@ -33,6 +33,18 @@ public final class FlightColors {
         return 0xFF000000 | rgb;
     }
 
+    /**
+     * Applies an explicit alpha byte (0-255) instead of forcing full opacity.
+     * Used for the flight instrument overlay's immersive-HUD-height fade,
+     * where alpha 0 is the deliberate "faded fully out" state at the edge of
+     * the simulated windshield — not the zero-alpha silent-no-op bug this
+     * class's {@link #opaque} exists to avoid; here a draw call quietly doing
+     * nothing at alpha 0 is exactly the wanted behavior.
+     */
+    public static int withAlpha(int rgb, int alpha) {
+        return ((alpha & 0xFF) << 24) | (rgb & 0xFFFFFF);
+    }
+
     public static float clamp01(float v) {
         return Math.max(0f, Math.min(1f, v));
     }

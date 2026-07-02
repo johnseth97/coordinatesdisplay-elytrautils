@@ -122,6 +122,24 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
                 "cd_elytrautils.config.show_aoa_indicator",
                 config.showAoaIndicator,
                 val -> config.showAoaIndicator = val));
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.show_bearing_tape",
+                config.showBearingTape,
+                val -> config.showBearingTape = val));
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.show_airspeed_tape",
+                config.showAirspeedTape,
+                val -> config.showAirspeedTape = val));
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.show_altitude_tape",
+                config.showAltitudeTape,
+                val -> config.showAltitudeTape = val));
+        addConfigLine(new BDoubleSlider(
+                "cd_elytrautils.config.immersive_hud_height",
+                40.0, 300.0,
+                config.immersiveHudHeightPixels,
+                0,
+                val -> config.immersiveHudHeightPixels = val));
     }
 
     @Override
