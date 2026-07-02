@@ -92,6 +92,14 @@ Distance and time until you meet the ground at the current glide slope, using
 the configured altimeter mode (see below). Both hide themselves when you're not
 descending.
 
+Time to ground is two-phase accurate, not a naive straight-line extrapolation:
+if your elytra will break from durability loss before you'd otherwise land, it
+simulates the actual post-break free-fall physics for the remaining distance
+instead of pretending the glide rate holds all the way down. When durability
+is genuinely the limiting factor, the number flashes red on the same clock as
+Master Caution — so turning Master Caution's banner off doesn't cost you the
+warning, it just moves to this row.
+
 ### Master Caution
 
 A screen-centered, slowly-flashing (epilepsy-safe 1 Hz) **ELYTRA DESTRUCTION

@@ -2,6 +2,7 @@ package com.johnseth97.cd_elytrautils;
 
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
@@ -156,6 +157,78 @@ public final class FlightMath {
     public static double glideRangeBlocks(LocalPlayer player, double horizontalSpeed, double vy) {
         double ticks = ticksToGround(player, vy);
         return ticks < 0.0 ? -1.0 : ticks * horizontalSpeed;
+    }
+
+    // Fall physics once fall-flying stops (LivingEntity#travelInAir, the
+    // non-FlyingAnimal branch): vy = (vy - gravity) * FALL_DRAG each tick,
+    // converging to a ~-3.92 blocks/tick terminal velocity for the default
+    // 0.08 gravity. gravity itself is read live from the player's actual
+    // Attributes.GRAVITY (matches how estimateFallImpactHearts in HudMixin
+    // reads SAFE_FALL_DISTANCE/FALL_DAMAGE_MULTIPLIER live rather than
+    // hardcoding vanilla defaults, so attribute modifiers are respected).
+    private static final double FALL_DRAG = 0.98;
+
+    // Sanity bound on the phase-2 simulation loop below — at terminal
+    // velocity this is ~1000 blocks/tick*ticks of fall, far beyond any
+    // realistic remaining distance; only exists to guarantee termination if
+    // an upstream value is ever NaN/garbage, not something normal play can
+    // reach.
+    private static final int MAX_FALL_SIMULATION_TICKS = 12000;
+
+    /**
+     * "Truly accurate" ticks to impact — unlike {@link #ticksToGround}, this
+     * doesn't naively extrapolate the *current glide rate* all the way to the
+     * ground; it accounts for what actually happens if the elytra breaks
+     * first. Two phases:
+     * <ol>
+     *   <li><b>Glide</b> — at the current descent rate, for
+     *       {@link #durabilityLimitedTicks} (the guaranteed-floor durability
+     *       window), or until the ground either way, whichever comes first.</li>
+     *   <li><b>Free fall</b> — if durability runs out before the ground does,
+     *       gliding stops ({@code canGlide()} goes false the tick after the
+     *       item breaks) and normal gravity/drag physics take over for
+     *       whatever distance is left, simulated tick-by-tick from the
+     *       decompiled {@code travelInAir} formula rather than assumed.</li>
+     * </ol>
+     *
+     * <p>Equals {@link #ticksToGround} exactly whenever durability isn't the
+     * limiting factor (no elytra, or you'd land before it could break) — this
+     * is a strict refinement, not a different number in the common case.
+     * Margin-free by design (unlike Master Caution's configurable early-
+     * warning lead time): it answers "will this genuinely happen," so a user
+     * can disable the Master Caution banner and still get a truthful number
+     * here. Returns -1 under the same "not meaningfully descending" condition
+     * as {@link #ticksToGround}.
+     */
+    public static double accurateTicksToImpact(LocalPlayer player, double vy) {
+        double ticksToGroundRaw = ticksToGround(player, vy);
+        if (ticksToGroundRaw < 0.0) {
+            return -1.0;
+        }
+
+        double durabilityTicks = durabilityLimitedTicks(player);
+        if (durabilityTicks < 0.0 || durabilityTicks >= ticksToGroundRaw) {
+            // No damageable elytra, or you reach the ground before it could
+            // break — durability never becomes the limiting factor.
+            return ticksToGroundRaw;
+        }
+
+        double glideDistance = durabilityTicks * -vy;
+        double remainingDistance = findGroundDistance(player).distance() - glideDistance;
+        if (remainingDistance <= 0.0) {
+            return ticksToGroundRaw;
+        }
+
+        double gravity = player.getAttributeValue(Attributes.GRAVITY);
+        double fallVy = vy;
+        double fallenDistance = 0.0;
+        int fallTicks = 0;
+        while (fallenDistance < remainingDistance && fallTicks < MAX_FALL_SIMULATION_TICKS) {
+            fallVy = (fallVy - gravity) * FALL_DRAG;
+            fallenDistance += -fallVy;
+            fallTicks++;
+        }
+        return durabilityTicks + fallTicks;
     }
 
     /**

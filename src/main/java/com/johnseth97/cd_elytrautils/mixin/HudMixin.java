@@ -244,16 +244,34 @@ public abstract class HudMixin {
         double vy = player.getDeltaMovement().y;
 
         MutableComponent row = Component.literal("  Time to ground ").withStyle(ChatFormatting.GRAY);
-        if (vy >= 0.0) {
+        if (vy >= FlightConstants.DIVE_GREEN_VY) {
             row.append(Component.literal("-- (not descending)").withStyle(ChatFormatting.DARK_GRAY));
             return row;
         }
 
-        FlightMath.GroundReading ground = FlightMath.findGroundDistance(player);
-        double ticksToGround = ground.distance() / -vy;
+        // accurateTicksToImpact accounts for what actually happens if the
+        // elytra breaks before you reach the ground — simulated post-break
+        // free-fall physics for the remainder, not the glide rate
+        // extrapolated the whole way (see FlightMath's doc). Margin-free
+        // "will this genuinely happen" check, independent of Master
+        // Caution's configurable early-warning lead time (masterCautionThresholdBlocks
+        // can be 0/off and this still tells the truth) — so it flashes red
+        // on the same shared clock as Master Caution's banner (issue: keep
+        // both warning treatments of the same underlying signal in sync)
+        // whenever durability is genuinely the limiting factor.
+        double ticksToGroundRaw = FlightMath.ticksToGround(player, vy);
+        double accurateTicks = FlightMath.accurateTicksToImpact(player, vy);
+        double durabilityTicks = FlightMath.durabilityLimitedTicks(player);
+        boolean willBreakBeforeLanding = durabilityTicks >= 0.0 && durabilityTicks < ticksToGroundRaw;
 
         row.append(Component.literal("~").withStyle(ChatFormatting.GRAY));
-        row.append(Component.literal(formatDuration(ticksToGround / 20.0)).withStyle(ChatFormatting.WHITE));
+        String durationText = formatDuration(accurateTicks / 20.0);
+        if (willBreakBeforeLanding && FlightColors.isFlashOn()) {
+            row.append(coloredText(durationText, FlightColors.COLOR_RED));
+        } else {
+            row.append(Component.literal(durationText).withStyle(ChatFormatting.WHITE));
+        }
+        FlightMath.GroundReading ground = FlightMath.findGroundDistance(player);
         if (!ground.raycastHit()) {
             row.append(Component.literal(" (sea level est.)").withStyle(ChatFormatting.DARK_GRAY));
         }

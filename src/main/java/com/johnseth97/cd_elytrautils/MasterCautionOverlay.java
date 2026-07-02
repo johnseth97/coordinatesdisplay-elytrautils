@@ -28,10 +28,6 @@ public final class MasterCautionOverlay {
 
     private static final String WARNING_TEXT = "ELYTRA DESTRUCTION IMMINENT";
 
-    // Epilepsy-safe flash rate: 1 Hz (500ms on / 500ms off), well outside the
-    // 3-30 Hz range associated with photosensitive seizure risk.
-    private static final long FLASH_PERIOD_MS = 1000;
-
     private MasterCautionOverlay() {
     }
 
@@ -74,7 +70,7 @@ public final class MasterCautionOverlay {
             return;
         }
 
-        if (System.currentTimeMillis() % FLASH_PERIOD_MS >= FLASH_PERIOD_MS / 2) {
+        if (!FlightColors.isFlashOn()) {
             return;
         }
 

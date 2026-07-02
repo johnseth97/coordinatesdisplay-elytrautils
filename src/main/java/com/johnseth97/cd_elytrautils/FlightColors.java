@@ -18,7 +18,20 @@ public final class FlightColors {
     public static final int COLOR_ORANGE = 0xFFAA00;
     public static final int COLOR_GREEN = 0x55FF55;
 
+    // Epilepsy-safe flash rate: 1 Hz (500ms on / 500ms off), well outside the
+    // 3-30 Hz range associated with photosensitive seizure risk. Shared by
+    // every "will break before landing" warning treatment — Master Caution's
+    // screen-centered banner and the text HUD's Time to ground row both flash
+    // off the same clock, so a user who's disabled the banner but left the
+    // row on still sees the *same* alert cadence, not a different one.
+    private static final long FLASH_PERIOD_MS = 1000;
+
     private FlightColors() {
+    }
+
+    /** True during the "on" half of the shared 1 Hz warning-flash cycle. */
+    public static boolean isFlashOn() {
+        return System.currentTimeMillis() % FLASH_PERIOD_MS < FLASH_PERIOD_MS / 2;
     }
 
     /**
