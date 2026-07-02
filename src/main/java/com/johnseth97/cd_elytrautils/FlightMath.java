@@ -24,8 +24,9 @@ public final class FlightMath {
     // (LivingEntity#updateFallFlying). Unbreaking only reduces the *chance*
     // a roll costs a point — it can never let more than 1 point break per
     // roll — so remainingDurability * 20 ticks is a hard floor on how fast
-    // the elytra could possibly break, regardless of enchantments.
-    private static final int DURABILITY_ROLL_INTERVAL_TICKS = 20;
+    // the elytra could possibly break, regardless of enchantments. Public so
+    // HudMixin's flight-time estimate (issue #5) can share the same constant.
+    public static final int DURABILITY_ROLL_INTERVAL_TICKS = 20;
 
     private FlightMath() {
     }

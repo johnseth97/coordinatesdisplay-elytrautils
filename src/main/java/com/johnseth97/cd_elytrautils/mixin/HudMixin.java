@@ -23,6 +23,7 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec3;
@@ -60,7 +61,7 @@ public abstract class HudMixin {
                 || startCorner == StartCorner.BOTTOM_RIGHT
                 || startCorner == StartCorner.BOTTOM;
 
-        ParagraphComponent rowComponent = new ParagraphComponent(0, buildFlightLine(player), buildImpactLine(player), buildRangeLine(player));
+        ParagraphComponent rowComponent = new ParagraphComponent(0, buildFlightLine(player), buildImpactLine(player), buildRangeLine(player), buildFlightTimeLine(player));
         ColumnLayout wrapper = new ColumnLayout(rect.getX(), rect.getY(), 2);
         if (growUpward) {
             // Keep the original block's bottom edge fixed: shift the wrapper
@@ -83,11 +84,28 @@ public abstract class HudMixin {
     // entity) and numerically simulating them, rather than assumed — see
     // GitHub issues #2 and #3 for the full derivation and simulation method.
 
-    // STALL / CLIMB / GLIDE / APPROACH / DIVE bucket edges.
-    private static final float STALL_PITCH = -45f;
+    // CLIMB / GLIDE / APPROACH / DIVE pitch-bucket edges. STALL is no longer
+    // one of these — see STALL_HORIZONTAL_SPEED below.
     private static final float CLIMB_UPPER_PITCH = -8f;
     private static final float GLIDE_RED_PITCH = 30f;
     private static final float APPROACH_UPPER_PITCH = 45f;
+
+    // STALL keys off horizontal airspeed, not pitch (issue #9). A pitch-only
+    // check conflated the approach-to-stall region with legitimately good
+    // climb angles — the -34 deg ideal climb angle (see IDEAL_CLIMB_PITCH)
+    // sits well past where the old pitch-only STALL threshold used to fire.
+    // ~0.35 blocks/tick is the simulated steady-state minimum airspeed
+    // confirmed in #3's derivation (matches the wiki's ~7.2 m/s claim); 0.4
+    // gives a small buffer above that asymptote.
+    private static final float STALL_HORIZONTAL_SPEED = 0.4f;
+
+    // DIVE's danger gradient is keyed on descent rate (vy), not pitch — pitch
+    // only gates entry into the DIVE bucket itself (pitch > APPROACH_UPPER_PITCH).
+    // -0.45 is the exact threshold the old standalone "LAND NOW" override used
+    // (issue #8); kept here as the gradient's red endpoint so removing that
+    // override doesn't lose its meaning.
+    private static final float DIVE_GREEN_VY = -0.05f;
+    private static final float DIVE_RED_VY = -0.45f;
 
     // Ideal pitch to hold during a rocket's burn to maximize peak altitude
     // gained from that single burst (simulated: boost formula + burn duration
@@ -154,9 +172,7 @@ public abstract class HudMixin {
         double horizontalSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
 
         Component status;
-        if (vy < -0.45) {
-            status = coloredText("LAND NOW", COLOR_RED);
-        } else if (pitch < STALL_PITCH) {
+        if (horizontalSpeed < STALL_HORIZONTAL_SPEED) {
             status = coloredText("⚠ STALL", COLOR_RED);
         } else if (pitch < CLIMB_UPPER_PITCH) {
             status = gradientStatus("CLIMB", pitch, IDEAL_CLIMB_PITCH, CLIMB_GRADIENT_HALF_WIDTH, true);
@@ -165,7 +181,7 @@ public abstract class HudMixin {
         } else if (pitch <= APPROACH_UPPER_PITCH) {
             status = coloredText("→ APPROACH", 0x55FFFF);
         } else {
-            status = coloredText("↓ DIVE", 0xFFAA00);
+            status = diveGradientStatus(vy);
         }
 
         MutableComponent row = Component.literal("Elytra  ").withStyle(ChatFormatting.GRAY);
@@ -240,6 +256,53 @@ public abstract class HudMixin {
         return row;
     }
 
+    // Flight time estimate. Elytra durability rolls every 20 ticks of
+    // continuous flight (FlightMath.DURABILITY_ROLL_INTERVAL_TICKS); Unbreaking
+    // (armor-slot branch, verified against unbreaking.json) gives a chance to
+    // avoid losing a point per roll: (2*level) / (10 + 5*(level-1)). Shows both
+    // the statistically-expected time and the guaranteed-floor (worst-case,
+    // fastest-possible-break) time when Unbreaking makes them differ — see
+    // issue #5.
+    private static Component buildFlightTimeLine(LocalPlayer player) {
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        if (!chest.is(Items.ELYTRA) || !chest.isDamageableItem()) {
+            return Component.literal("  Flight time --").withStyle(ChatFormatting.DARK_GRAY);
+        }
+
+        int remainingDurability = chest.getMaxDamage() - chest.getDamageValue();
+        int unbreakingLevel = getEnchantmentLevel(player, chest, Enchantments.UNBREAKING);
+        double avoidChance = unbreakingLevel <= 0 ? 0.0 : (2.0 * unbreakingLevel) / (10.0 + 5.0 * (unbreakingLevel - 1));
+        double loseChance = 1.0 - avoidChance;
+
+        double expectedTicks = remainingDurability / (loseChance / FlightMath.DURABILITY_ROLL_INTERVAL_TICKS);
+        double guaranteedFloorTicks = (double) remainingDurability * FlightMath.DURABILITY_ROLL_INTERVAL_TICKS;
+
+        MutableComponent row = Component.literal("  Flight time ~").withStyle(ChatFormatting.GRAY);
+        row.append(Component.literal(formatDuration(expectedTicks / 20.0)).withStyle(ChatFormatting.WHITE));
+        if (unbreakingLevel > 0) {
+            row.append(Component.literal(" (worst ").withStyle(ChatFormatting.DARK_GRAY));
+            row.append(Component.literal(formatDuration(guaranteedFloorTicks / 20.0)).withStyle(ChatFormatting.DARK_GRAY));
+            row.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        return row;
+    }
+
+    private static String formatDuration(double seconds) {
+        int totalSeconds = (int) Math.round(seconds);
+        int minutes = totalSeconds / 60;
+        int secs = totalSeconds % 60;
+        return String.format("%d:%02d", minutes, secs);
+    }
+
+    private static int getEnchantmentLevel(LocalPlayer player, ItemStack stack, net.minecraft.resources.ResourceKey<Enchantment> enchantmentKey) {
+        try {
+            Holder<Enchantment> holder = player.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(enchantmentKey);
+            return stack.getEnchantments().getLevel(holder);
+        } catch (RuntimeException e) {
+            return 0;
+        }
+    }
+
     /** Sums (base + perLevelAboveFirst*(level-1)) across every worn armor piece that has this enchantment. */
     private static float sumEnchantmentPoints(LocalPlayer player, net.minecraft.resources.ResourceKey<Enchantment> enchantmentKey, float base, float perLevelAboveFirst) {
         Holder<Enchantment> holder;
@@ -289,6 +352,14 @@ public abstract class HudMixin {
         }
 
         return coloredText(arrow + " " + label, color);
+    }
+
+    /** DIVE's danger gradient: green at a mild descent rate, red at the old LAND NOW threshold. See issue #8. */
+    private static Component diveGradientStatus(double vy) {
+        float t = clamp01((float) ((DIVE_GREEN_VY - vy) / (DIVE_GREEN_VY - DIVE_RED_VY)));
+        int color = threeStopGradient(t);
+        String arrow = t > 0.5f ? "▲" : "↓";
+        return coloredText(arrow + " DIVE", color);
     }
 
     private static Component coloredText(String text, int rgb) {
