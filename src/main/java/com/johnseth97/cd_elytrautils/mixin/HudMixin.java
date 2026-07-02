@@ -13,12 +13,17 @@ import dev.boxadactle.coordinatesdisplay.registry.StartCorner;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -104,6 +109,30 @@ public abstract class HudMixin {
     private static final int COLOR_ORANGE = 0xFFAA00;
     private static final int COLOR_GREEN = 0x55FF55;
 
+    // Impact damage estimate. Derived by decompiling LivingEntity's actual
+    // damage formulas — not guessed:
+    //   - Wall impact (fly_into_wall damage type): raw damage = horizontalSpeed*10 - 3
+    //     (LivingEntity#handleFallFlyingCollisions models this as
+    //     (speedBefore - speedAfter)*10 - 3; a HUD prediction assumes a wall
+    //     fully arrests horizontal speed, i.e. speedAfter ~= 0).
+    //   - Ground impact (fall damage type): raw damage = floor(max(0, fallDistance - safeFallDistance) * fallDamageMultiplier),
+    //     using the player's live Entity#fallDistance and their actual
+    //     SAFE_FALL_DISTANCE/FALL_DAMAGE_MULTIPLIER attributes rather than
+    //     hardcoded vanilla defaults (3.0 / 1.0), so effects/attribute
+    //     modifiers are respected.
+    //   - Both damage types are tagged bypasses_armor (base armor points/
+    //     toughness never apply), but enchantment "damage_protection" effects
+    //     are a separate mechanic that still applies. Protection (1 point/level,
+    //     summed across all 4 armor pieces) reduces both. Feather Falling
+    //     (3 points/level, summed across all 4 armor pieces) is only tagged
+    //     for is_fall damage, so it reduces ground impact only, NOT wall impact.
+    //   - Reduction formula (CombatRules#getDamageAfterMagicAbsorb):
+    //     damage * (1 - min(20, totalPoints) / 25).
+    // See GitHub issue #4 for the full derivation.
+    private static final EquipmentSlot[] ARMOR_SLOTS = {
+            EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
+    };
+
     private static boolean shouldShowOverlay(LocalPlayer player) {
         if (!CoordinatesDisplayElytraUtils.getConfig().showElytraOverlay) {
             return false;
@@ -138,13 +167,69 @@ public abstract class HudMixin {
             status = coloredText("↓ DIVE", 0xFFAA00);
         }
 
+        float wallImpactHearts = estimateWallImpactHearts(player, horizontalSpeed);
+        float fallImpactHearts = estimateFallImpactHearts(player);
+
         MutableComponent row = Component.literal("Elytra  ").withStyle(ChatFormatting.GRAY);
         row.append(Component.literal(String.format("%.1f°  ", pitch)).withStyle(ChatFormatting.WHITE));
         row.append(status);
         row.append(Component.literal("  "));
         row.append(Component.literal(String.format("Vy %.2f  ", vy)).withStyle(ChatFormatting.WHITE));
-        row.append(Component.literal(String.format("H %.2f", horizontalSpeed)).withStyle(ChatFormatting.WHITE));
+        row.append(Component.literal(String.format("H %.2f  ", horizontalSpeed)).withStyle(ChatFormatting.WHITE));
+        row.append(Component.literal("Impact ").withStyle(ChatFormatting.GRAY));
+        row.append(impactHeartsText("H", wallImpactHearts));
+        row.append(Component.literal(" "));
+        row.append(impactHeartsText("V", fallImpactHearts));
         return row;
+    }
+
+    /** Damage from flying horizontally into a wall right now, in hearts, after Protection. */
+    private static float estimateWallImpactHearts(LocalPlayer player, double horizontalSpeed) {
+        float rawDamage = (float) (horizontalSpeed * 10.0 - 3.0);
+        if (rawDamage <= 0f) {
+            return 0f;
+        }
+        float protection = sumEnchantmentPoints(player, Enchantments.PROTECTION, 1f, 1f);
+        float epf = Math.min(20f, protection);
+        return (rawDamage * (1f - epf / 25f)) / 2f;
+    }
+
+    /** Damage from hitting the ground right now, in hearts, after Protection + Feather Falling. */
+    private static float estimateFallImpactHearts(LocalPlayer player) {
+        float safeFallDistance = (float) player.getAttributeValue(Attributes.SAFE_FALL_DISTANCE);
+        float fallDamageMultiplier = (float) player.getAttributeValue(Attributes.FALL_DAMAGE_MULTIPLIER);
+        float fallDistance = (float) player.fallDistance;
+        float rawDamage = (float) Math.floor(Math.max(0f, fallDistance - safeFallDistance) * fallDamageMultiplier);
+        if (rawDamage <= 0f) {
+            return 0f;
+        }
+        float protection = sumEnchantmentPoints(player, Enchantments.PROTECTION, 1f, 1f);
+        float featherFalling = sumEnchantmentPoints(player, Enchantments.FEATHER_FALLING, 3f, 3f);
+        float epf = Math.min(20f, protection + featherFalling);
+        return (rawDamage * (1f - epf / 25f)) / 2f;
+    }
+
+    /** Sums (base + perLevelAboveFirst*(level-1)) across every worn armor piece that has this enchantment. */
+    private static float sumEnchantmentPoints(LocalPlayer player, net.minecraft.resources.ResourceKey<Enchantment> enchantmentKey, float base, float perLevelAboveFirst) {
+        Holder<Enchantment> holder;
+        try {
+            holder = player.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(enchantmentKey);
+        } catch (RuntimeException e) {
+            return 0f;
+        }
+        float total = 0f;
+        for (EquipmentSlot slot : ARMOR_SLOTS) {
+            int level = player.getItemBySlot(slot).getEnchantments().getLevel(holder);
+            if (level > 0) {
+                total += base + perLevelAboveFirst * (level - 1);
+            }
+        }
+        return total;
+    }
+
+    private static Component impactHeartsText(String axisLabel, float hearts) {
+        int color = hearts <= 0f ? COLOR_GREEN : hearts >= 10f ? COLOR_RED : threeStopGradient(hearts / 10f);
+        return coloredText(String.format("%s:%.1f❤", axisLabel, hearts), color);
     }
 
     /**
