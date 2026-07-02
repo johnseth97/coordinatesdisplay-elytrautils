@@ -84,11 +84,13 @@ public abstract class HudMixin {
     // entity) and numerically simulating them, rather than assumed — see
     // GitHub issues #2 and #3 for the full derivation and simulation method.
 
-    // CLIMB / GLIDE / APPROACH / DIVE pitch-bucket edges. STALL is no longer
-    // one of these — see STALL_HORIZONTAL_SPEED below.
+    // CLIMB / GLIDE / DIVE pitch-bucket edges. STALL is no longer one of
+    // these — see STALL_HORIZONTAL_SPEED below. There is no APPROACH bucket:
+    // it added a static-color label with no real signal of its own once the
+    // Impact line (issue #4) already covers "what happens if I touch down
+    // now" directly — pitch >= GLIDE_RED_PITCH goes straight to DIVE.
     private static final float CLIMB_UPPER_PITCH = -8f;
     private static final float GLIDE_RED_PITCH = 30f;
-    private static final float APPROACH_UPPER_PITCH = 45f;
 
     // STALL keys off horizontal airspeed, not pitch (issue #9). A pitch-only
     // check conflated the approach-to-stall region with legitimately good
@@ -100,7 +102,7 @@ public abstract class HudMixin {
     private static final float STALL_HORIZONTAL_SPEED = 0.4f;
 
     // DIVE's danger gradient is keyed on descent rate (vy), not pitch — pitch
-    // only gates entry into the DIVE bucket itself (pitch > APPROACH_UPPER_PITCH).
+    // only gates entry into the DIVE bucket itself (pitch >= GLIDE_RED_PITCH).
     // -0.45 is the exact threshold the old standalone "LAND NOW" override used
     // (issue #8); kept here as the gradient's red endpoint so removing that
     // override doesn't lose its meaning.
@@ -172,14 +174,20 @@ public abstract class HudMixin {
         double horizontalSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
 
         Component status;
-        if (horizontalSpeed < STALL_HORIZONTAL_SPEED) {
+        if (!player.isFallFlying()) {
+            // Pre-launch: elytra equipped + rockets in hand, but not airborne
+            // yet (see shouldShowOverlay). Horizontal airspeed is ~0 on the
+            // ground, so the STALL check below is meaningless here and would
+            // always fire — show the same climb-angle gradient CLIMB uses
+            // instead, since that's exactly what matters before jumping: is
+            // this look angle a good one to launch and boost into?
+            status = gradientStatus("LAUNCH", pitch, IDEAL_CLIMB_PITCH, CLIMB_GRADIENT_HALF_WIDTH, true);
+        } else if (horizontalSpeed < STALL_HORIZONTAL_SPEED) {
             status = coloredText("⚠ STALL", COLOR_RED);
         } else if (pitch < CLIMB_UPPER_PITCH) {
             status = gradientStatus("CLIMB", pitch, IDEAL_CLIMB_PITCH, CLIMB_GRADIENT_HALF_WIDTH, true);
         } else if (pitch < GLIDE_RED_PITCH) {
             status = gradientStatus("GLIDE", pitch, IDEAL_GLIDE_PITCH, GLIDE_RED_PITCH, false);
-        } else if (pitch <= APPROACH_UPPER_PITCH) {
-            status = coloredText("→ APPROACH", 0x55FFFF);
         } else {
             status = diveGradientStatus(vy);
         }
