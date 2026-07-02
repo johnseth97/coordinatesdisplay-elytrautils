@@ -88,21 +88,26 @@ public abstract class HudMixin {
         double vy = velocity.y;
         double horizontalSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
 
+        // Bucket boundaries are grounded in the actual elytra stall mechanic
+        // (pitching up more than ~30 deg drops airspeed to the ~7.2 m/s floor,
+        // per the Minecraft Wiki), not just plausible-sounding numbers — see
+        // agents.md for the source. -30 deg is a hard boundary; the others
+        // are reasoned proportionally from it pending real telemetry.
         String statusText;
         ChatFormatting statusColor;
         if (vy < -0.45) {
             statusText = "LAND NOW";
             statusColor = ChatFormatting.RED;
-        } else if (pitch < -55f) {
+        } else if (pitch < -30f) {
             statusText = "⚠ STALL";
             statusColor = ChatFormatting.RED;
-        } else if (pitch < -30f) {
+        } else if (pitch < -10f) {
             statusText = "↑ CLIMB";
             statusColor = ChatFormatting.YELLOW;
-        } else if (pitch < -12f) {
+        } else if (pitch < 5f) {
             statusText = "✓ GLIDE";
             statusColor = ChatFormatting.GREEN;
-        } else if (pitch <= 3f) {
+        } else if (pitch <= 20f) {
             statusText = "→ APPROACH";
             statusColor = ChatFormatting.AQUA;
         } else {
