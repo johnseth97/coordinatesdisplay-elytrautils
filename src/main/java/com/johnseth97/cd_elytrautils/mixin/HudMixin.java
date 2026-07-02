@@ -5,36 +5,81 @@ import dev.boxadactle.boxlib.layouts.RenderingLayout;
 import dev.boxadactle.boxlib.layouts.component.LayoutContainerComponent;
 import dev.boxadactle.boxlib.layouts.component.ParagraphComponent;
 import dev.boxadactle.boxlib.layouts.layout.ColumnLayout;
+import dev.boxadactle.boxlib.math.geometry.Rect;
 import dev.boxadactle.coordinatesdisplay.Hud;
+import dev.boxadactle.coordinatesdisplay.position.Position;
+import dev.boxadactle.coordinatesdisplay.registry.DisplayMode;
+import dev.boxadactle.coordinatesdisplay.registry.StartCorner;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Wraps CoordinatesDisplay's assembled HUD layout in a new outer column that
- * adds an elytra telemetry row, so the extra row's size is folded into the
- * layout's rect before {@link Hud#preRender} computes screen position.
+ * Appends an elytra telemetry row next to CoordinatesDisplay's HUD.
+ *
+ * Injects at {@code RETURN} of {@link Hud#preRender}, after CoordinatesDisplay
+ * has already resolved the layout's on-screen anchor position from its own
+ * (un-widened) size. The original layout is pinned at that resolved position
+ * and the elytra row is stacked next to it — it must never feed back into the
+ * anchor math, or corner-anchored HUDs visibly jump every time flight state
+ * toggles (the row's height would change the size the anchor is computed from).
  */
 @Mixin(value = Hud.class, remap = false)
 public abstract class HudMixin {
 
-    @ModifyVariable(method = "preRender", at = @At(value = "STORE", ordinal = 0))
-    private RenderingLayout cd_elytrautils$appendElytraRow(RenderingLayout layout) {
+    @Inject(method = "preRender", at = @At("RETURN"), cancellable = true)
+    private void cd_elytrautils$appendElytraRow(
+            Hud.RenderType thread, Position pos, int x, int y, DisplayMode renderMode, StartCorner startCorner,
+            CallbackInfoReturnable<RenderingLayout> cir) {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || !player.isFallFlying() || !CoordinatesDisplayElytraUtils.getConfig().showElytraOverlay) {
-            return layout;
+        if (player == null || !shouldShowOverlay(player)) {
+            return;
         }
 
-        ColumnLayout wrapper = new ColumnLayout(0, 0, 2);
-        wrapper.addComponent(new LayoutContainerComponent(layout));
-        wrapper.addComponent(new ParagraphComponent(0, buildElytraRow(player)));
-        return wrapper;
+        RenderingLayout original = cir.getReturnValue();
+        Rect<Integer> rect = original.calculateRect();
+
+        boolean growUpward = startCorner == StartCorner.BOTTOM_LEFT
+                || startCorner == StartCorner.BOTTOM_RIGHT
+                || startCorner == StartCorner.BOTTOM;
+
+        ParagraphComponent rowComponent = new ParagraphComponent(0, buildElytraRow(player));
+        ColumnLayout wrapper = new ColumnLayout(rect.getX(), rect.getY(), 2);
+        if (growUpward) {
+            // Keep the original block's bottom edge fixed: shift the wrapper
+            // up by the row's height (+ the same padding ColumnLayout uses
+            // between components) so the original still renders at rect.getY().
+            wrapper.addComponent(rowComponent);
+            wrapper.addComponent(new LayoutContainerComponent(original));
+            wrapper.setPosition(rect.getX(), rect.getY() - rowComponent.getHeight() - 4);
+        } else {
+            wrapper.addComponent(new LayoutContainerComponent(original));
+            wrapper.addComponent(rowComponent);
+        }
+
+        cir.setReturnValue(wrapper);
+    }
+
+    private static boolean shouldShowOverlay(LocalPlayer player) {
+        if (!CoordinatesDisplayElytraUtils.getConfig().showElytraOverlay) {
+            return false;
+        }
+        if (player.isFallFlying()) {
+            return true;
+        }
+        boolean hasElytraEquipped = player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA);
+        boolean holdingRockets = player.getMainHandItem().is(Items.FIREWORK_ROCKET)
+                || player.getOffhandItem().is(Items.FIREWORK_ROCKET);
+        return hasElytraEquipped && holdingRockets;
     }
 
     private static Component buildElytraRow(LocalPlayer player) {
