@@ -5,6 +5,7 @@
   "name": "ElytraUtils",
   "description": "Adds elytra flight telemetry to the CoordinatesDisplay HUD.",
   "authors": ["johnseth97"],
+  "icon": "icon.png",
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
