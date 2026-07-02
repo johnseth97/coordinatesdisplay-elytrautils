@@ -15,6 +15,7 @@ public final class CoordinatesDisplayElytraUtils implements ModInitializer {
     @Override
     public void onInitialize() {
         CONFIG = BConfigHandler.registerConfig(ElytraUtilsConfig.class);
+        MasterCautionOverlay.register();
         LOGGER.info("[{}] initialized", MOD_ID);
     }
 

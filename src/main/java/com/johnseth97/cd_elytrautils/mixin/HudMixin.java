@@ -1,6 +1,7 @@
 package com.johnseth97.cd_elytrautils.mixin;
 
 import com.johnseth97.cd_elytrautils.CoordinatesDisplayElytraUtils;
+import com.johnseth97.cd_elytrautils.FlightMath;
 import dev.boxadactle.boxlib.layouts.RenderingLayout;
 import dev.boxadactle.boxlib.layouts.component.LayoutContainerComponent;
 import dev.boxadactle.boxlib.layouts.component.ParagraphComponent;
@@ -24,10 +25,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -219,18 +216,9 @@ public abstract class HudMixin {
         return (rawDamage * (1f - epf / 25f)) / 2f;
     }
 
-    // Glide range: how many more blocks the player will travel before hitting
-    // the ground, at the current glide slope. Ground height is found via a
-    // straight-down raycast from the player's position (a "radar altimeter"
-    // reading actual terrain below, not a fixed reference), falling back to
-    // the current dimension's configured sea level if the raycast comes up
-    // empty (deep caves with no floor in range, void, unloaded chunks). This
-    // generalizes across dimensions for free — Level#getSeaLevel() is itself
-    // dimension-type data, not an Overworld-specific constant, so it already
-    // gives a sensible answer in the Nether/End without special-casing them.
-    // See GitHub issue #6.
-    private static final double MAX_RAYCAST_DISTANCE = 320.0;
-
+    // Glide range math lives in FlightMath, shared with MasterCautionOverlay
+    // (issue #7), which needs the same ground-distance and durability-range
+    // numbers to decide when to warn. See GitHub issue #6.
     private static Component buildRangeLine(LocalPlayer player) {
         Vec3 velocity = player.getDeltaMovement();
         double vy = velocity.y;
@@ -242,33 +230,14 @@ public abstract class HudMixin {
             return row;
         }
 
-        GroundReading ground = findGroundDistance(player);
-        double blocksRemaining = ground.distance * (horizontalSpeed / -vy);
+        FlightMath.GroundReading ground = FlightMath.findGroundDistance(player);
+        double blocksRemaining = ground.distance() * (horizontalSpeed / -vy);
 
         row.append(Component.literal(String.format("%.0f blocks", blocksRemaining)).withStyle(ChatFormatting.WHITE));
-        if (!ground.raycastHit) {
+        if (!ground.raycastHit()) {
             row.append(Component.literal(" (sea level est.)").withStyle(ChatFormatting.DARK_GRAY));
         }
         return row;
-    }
-
-    private record GroundReading(double distance, boolean raycastHit) {
-    }
-
-    private static GroundReading findGroundDistance(LocalPlayer player) {
-        Level level = player.level();
-        Vec3 from = player.position();
-        double minY = Math.max(level.getMinY(), from.y - MAX_RAYCAST_DISTANCE);
-        Vec3 to = new Vec3(from.x, minY, from.z);
-
-        ClipContext context = new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player);
-        BlockHitResult hit = level.clip(context);
-        if (hit.getType() != HitResult.Type.MISS) {
-            return new GroundReading(from.y - hit.getLocation().y, true);
-        }
-
-        double seaLevelDistance = from.y - level.getSeaLevel();
-        return new GroundReading(Math.max(0.0, seaLevelDistance), false);
     }
 
     /** Sums (base + perLevelAboveFirst*(level-1)) across every worn armor piece that has this enchantment. */
