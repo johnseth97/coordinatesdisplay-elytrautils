@@ -27,6 +27,11 @@ import net.minecraft.world.phys.Vec3;
  * fully-composed ARGB int for exactly that reason, so alpha is never an
  * afterthought at a call site.
  *
+ * <p>{@code config.showFlightInstruments} is this overlay's only visibility
+ * gate (besides fall-flying) — deliberately independent of {@code
+ * showElytraOverlay} (the legacy CD text row's toggle), so either display can
+ * run without the other.
+ *
  * <h2>Angle conventions</h2>
  * All angles use Minecraft's pitch convention — <b>positive = nose DOWN</b>
  * ({@link LocalPlayer#getXRot()}). The pitch ladder is labeled the way pilots
@@ -48,24 +53,39 @@ import net.minecraft.world.phys.Vec3;
  * Real HUD combiner glass only covers part of the pilot's view — the tapes
  * and ladder don't extend to the edges of the whole windshield. {@code
  * config.immersiveHudHeightPixels} models that: vertically-tracking elements
- * (pitch ladder, airspeed/altitude tapes) fade to transparent over {@link
- * #FADE_BAND_PX} as they approach that half-height from center, via {@link
- * #verticalFadeAlpha}, instead of hard-clipping or tracking the full screen.
- * The bearing tape and the fixed boxed readouts are not subject to this fade
- * — they sit at a fixed position near center/top rather than tracking.
+ * (pitch ladder, airspeed/altitude tapes, FPM) fade to transparent over
+ * {@link #FADE_BAND_PX} as they approach that half-height from center, via
+ * {@link #verticalFadeAlpha}, instead of hard-clipping or tracking the full
+ * screen. The bearing tape and the fixed boxed readouts (BALT/RALT/airspeed/
+ * heading boxes) are not subject to this fade — they sit at a fixed position
+ * rather than tracking.
+ *
+ * <h2>Scale and color</h2>
+ * {@code config.flightInstrumentScale} is a single multiplier applied to
+ * every layout constant below (offsets, spacing, marker sizes, pixels-per-
+ * unit) via {@link #scaled}, so the whole display grows or shrinks as one
+ * unit — not just the pitch ladder's density, which is all the earlier
+ * pixels-per-degree slider controlled. {@code config.flightInstrumentColor}
+ * recolors the structural elements (ladder, horizon, boresight, tape lines/
+ * labels/boxes, bearing tape) uniformly, matching how a real HUD combiner
+ * renders everything in one phosphor color. The physics-derived signal colors
+ * ({@link FlightColors#flightStateColor}, the climb/dive reference marks, the
+ * STALL flag) are deliberately independent of that setting — they carry
+ * safety meaning (green/orange/red), not just aesthetics, so a user can't
+ * accidentally recolor away the warning.
  */
 public final class FlightInstrumentOverlay {
 
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(
             CoordinatesDisplayElytraUtils.MOD_ID, "flight_instruments");
 
-    // Ladder geometry (screen pixels). The rung gap keeps the middle clear so
-    // the boresight and FPM read cleanly against the ladder.
-    private static final int RUNG_GAP = 26;        // half-width of the clear center gap
-    private static final int RUNG_LENGTH = 34;     // length of each side rung segment
-    private static final int HORIZON_HALF_WIDTH = 90;
-    private static final int RUNG_STEP_DEGREES = 10;
-    private static final int LADDER_MAX_ELEVATION = 80;
+    // Ladder geometry (screen pixels at scale 1.0). The rung gap keeps the
+    // middle clear so the boresight and FPM read cleanly against the ladder.
+    private static final int BASE_RUNG_GAP = 26;        // half-width of the clear center gap
+    private static final int BASE_RUNG_LENGTH = 34;     // length of each side rung segment
+    private static final int BASE_HORIZON_HALF_WIDTH = 90;
+    private static final int RUNG_STEP_DEGREES = 10;    // value-space, not scaled
+    private static final int LADDER_MAX_ELEVATION = 80; // value-space, not scaled
 
     // Reference marks, grounded in the derived constants (not eyeballed):
     // ideal rocket climb and the dive-caution threshold, both converted from
@@ -73,42 +93,57 @@ public final class FlightInstrumentOverlay {
     private static final float IDEAL_CLIMB_ELEVATION = -FlightConstants.IDEAL_CLIMB_PITCH; // +34
     private static final float DIVE_CAUTION_ELEVATION = -FlightConstants.GLIDE_RED_PITCH;  // -30
 
-    private static final int COLOR_HORIZON = 0xFFFFFF;
-    private static final int COLOR_LADDER = 0xC0C0C0;
-    private static final int COLOR_BORESIGHT = 0xFFFF55;
+    private static final int BASE_PIXELS_PER_DEGREE = 4; // ladder / AoA span / FPM lateral drift
+
+    private static final int BASE_BORESIGHT_INNER = 6;
+    private static final int BASE_BORESIGHT_OUTER = 18;
+
+    private static final int BASE_FPM_RADIUS = 4;
+    private static final int BASE_FPM_WING = 8;
+    private static final int BASE_FPM_STUB = 6;
 
     // AoA indexer geometry: a fixed vertical tape left of center. Small and
     // fixed-height, so it's not "tracking" the way the ladder/airspeed/
-    // altitude tapes are — no immersive-height fade applied.
-    private static final int AOA_TAPE_OFFSET_X = 118;
-    private static final int AOA_TAPE_HALF_HEIGHT = 40;
-    private static final float AOA_DISPLAY_SPAN = 15f; // degrees mapped over the tape half-height
+    // altitude tapes are — no immersive-height fade applied. Offset chosen
+    // (95, not the airspeed tape's 150) so its numeric readout — anchored to
+    // the RIGHT at ax+7, extending left — can never reach the airspeed tape's
+    // label column regardless of vertical position; a wider gap here caused a
+    // real overlap in testing (offset 118 left only ~7px of margin against a
+    // ~40px-wide "AoA 10°" string).
+    private static final int BASE_AOA_TAPE_OFFSET_X = 95;
+    private static final int BASE_AOA_TAPE_HALF_HEIGHT = 40;
+    private static final float AOA_DISPLAY_SPAN = 15f; // value-space: degrees mapped over the tape half-height
 
     // Immersive-HUD-height fade band: vertically-tracking elements fade to
     // zero alpha over this many pixels as they approach the configured
-    // half-height from center, rather than hard-clipping.
+    // half-height from center, rather than hard-clipping. Fixed regardless of
+    // scale — it's a glass-edge softness, not a symbol size.
     private static final int FADE_BAND_PX = 24;
 
     // Airspeed tape (left). Displayed in blocks/second (horizontalSpeed * 20)
     // rather than raw blocks/tick, since that reads as a much more HUD-scale
     // "airspeed" number (elytra cruise is roughly 8-12, boosted well past 40).
-    private static final int AIRSPEED_TAPE_OFFSET_X = 150;
-    private static final double AIRSPEED_STEP = 10.0;
-    private static final double AIRSPEED_PX_PER_UNIT = 3.0;
+    private static final int BASE_AIRSPEED_TAPE_OFFSET_X = 150;
+    private static final double AIRSPEED_STEP = 10.0; // value-space
+    private static final double BASE_AIRSPEED_PX_PER_UNIT = 3.0;
 
     // Altitude tape (right) — BALT, from FlightMath.barometricAltitude, plus
-    // a RALT box beneath the BALT readout from FlightMath.radarAltitude.
-    private static final int ALTITUDE_TAPE_OFFSET_X = 150;
-    private static final double ALTITUDE_STEP = 50.0;
-    private static final double ALTITUDE_PX_PER_UNIT = 1.0;
-    private static final int RALT_BOX_Y_OFFSET = 26;
+    // a RALT box from FlightMath.radarAltitude anchored to the *bottom* of the
+    // immersive HUD extent (not directly under BALT): it's a separate
+    // fixed-position instrument, like a real radar altimeter readout, not
+    // part of the scrolling BALT tape, so it needs clearance from BALT's own
+    // moving tick labels rather than sitting right where they pass through.
+    private static final int BASE_ALTITUDE_TAPE_OFFSET_X = 150;
+    private static final double ALTITUDE_STEP = 50.0; // value-space
+    private static final double BASE_ALTITUDE_PX_PER_UNIT = 1.0;
+    private static final int BASE_RALT_BOTTOM_MARGIN = 14;
 
     // Bearing tape (top). Not immersive-height-faded — it's a fixed row near
     // the top, not a vertically-tracking element.
-    private static final int BEARING_TAPE_Y = 34;
-    private static final double BEARING_STEP = 30.0;
-    private static final double BEARING_PX_PER_DEGREE = 3.0;
-    private static final int BEARING_TAPE_HALF_WIDTH = 100;
+    private static final int BASE_BEARING_TAPE_Y = 34;
+    private static final double BEARING_STEP = 30.0; // value-space
+    private static final double BASE_BEARING_PX_PER_DEGREE = 3.0;
+    private static final int BASE_BEARING_TAPE_HALF_WIDTH = 100;
 
     private FlightInstrumentOverlay() {
     }
@@ -121,8 +156,8 @@ public final class FlightInstrumentOverlay {
         Minecraft client = Minecraft.getInstance();
         LocalPlayer player = client.player;
         ElytraUtilsConfig config = CoordinatesDisplayElytraUtils.getConfig();
-        if (player == null || !config.showElytraOverlay || !config.showFlightInstruments
-                || !player.isFallFlying()) {
+        // Deliberately independent of config.showElytraOverlay — see class doc.
+        if (player == null || !config.showFlightInstruments || !player.isFallFlying()) {
             return;
         }
 
@@ -139,7 +174,9 @@ public final class FlightInstrumentOverlay {
         double gamma = Math.toDegrees(Math.atan2(-vy, horizontalSpeed));
         double aoa = pitch - gamma;
 
-        double pxPerDeg = config.flightInstrumentPixelsPerDegree;
+        float scale = (float) config.flightInstrumentScale;
+        int structColor = config.flightInstrumentColor;
+        double pxPerDeg = BASE_PIXELS_PER_DEGREE * scale;
         int cx = graphics.guiWidth() / 2;
         int cy = graphics.guiHeight() / 2;
         int immersiveHalfHeight = (int) Math.round(config.immersiveHudHeightPixels);
@@ -147,31 +184,35 @@ public final class FlightInstrumentOverlay {
         Font font = client.font;
 
         if (config.showPitchLadder) {
-            drawPitchLadder(graphics, font, cx, cy, pitch, pxPerDeg, immersiveHalfHeight);
+            drawPitchLadder(graphics, font, cx, cy, pitch, pxPerDeg, immersiveHalfHeight, scale, structColor);
         }
-        drawBoresight(graphics, cx, cy);
+        drawBoresight(graphics, cx, cy, scale, structColor);
         if (config.showFlightPathMarker) {
             drawFlightPathMarker(graphics, cx, cy, aoa, yaw, velocity, horizontalSpeed, pxPerDeg,
-                    immersiveHalfHeight, stateColor);
+                    immersiveHalfHeight, scale, stateColor);
         }
         if (config.showAoaIndicator) {
-            drawAoaIndicator(graphics, font, cx, cy, pitch, gamma, horizontalSpeed, stateColor);
+            drawAoaIndicator(graphics, font, cx, cy, pitch, gamma, horizontalSpeed, scale, structColor, stateColor);
         }
         if (config.showBearingTape) {
-            drawBearingTape(graphics, font, cx, yaw);
+            drawBearingTape(graphics, font, cx, yaw, scale, structColor);
         }
         if (config.showAirspeedTape) {
-            drawAirspeedTape(graphics, font, cx, cy, horizontalSpeed * 20.0, immersiveHalfHeight);
+            drawAirspeedTape(graphics, font, cx, cy, horizontalSpeed * 20.0, immersiveHalfHeight, scale, structColor);
         }
         if (config.showAltitudeTape) {
-            drawAltitudeTape(graphics, font, player, cx, cy, immersiveHalfHeight);
+            drawAltitudeTape(graphics, font, player, cx, cy, immersiveHalfHeight, scale, structColor);
         }
     }
 
     // ── Pitch ladder ──────────────────────────────────────────────────────
 
     private static void drawPitchLadder(GuiGraphics g, Font font, int cx, int cy, float pitch, double pxPerDeg,
-                                        int immersiveHalfHeight) {
+                                        int immersiveHalfHeight, float scale, int structColor) {
+        int rungGap = scaled(BASE_RUNG_GAP, scale);
+        int rungLength = scaled(BASE_RUNG_LENGTH, scale);
+        int horizonHalfWidth = scaled(BASE_HORIZON_HALF_WIDTH, scale);
+
         for (int elevation = -LADDER_MAX_ELEVATION; elevation <= LADDER_MAX_ELEVATION; elevation += RUNG_STEP_DEGREES) {
             // A rung for elevation e sits (e - noseElevation) degrees above the
             // nose, where noseElevation = -pitch; screen-y grows downward, so
@@ -183,35 +224,36 @@ public final class FlightInstrumentOverlay {
             }
 
             if (elevation == 0) {
-                drawHorizonLine(g, cx, y, alpha);
+                drawHorizonLine(g, cx, y, alpha, rungGap, horizonHalfWidth, structColor);
                 continue;
             }
             boolean climb = elevation > 0;
-            drawRung(g, cx, y, climb, COLOR_LADDER, alpha);
-            drawRungLabel(g, font, cx, y, Math.abs(elevation), COLOR_LADDER, alpha);
+            drawRung(g, cx, y, climb, structColor, alpha, rungGap, rungLength);
+            drawRungLabel(g, font, cx, y, Math.abs(elevation), structColor, alpha, rungGap, rungLength);
         }
 
-        // Derived-constant reference brackets, drawn on top of the grid.
-        drawReferenceMark(g, cx, cy, pitch, pxPerDeg, immersiveHalfHeight, IDEAL_CLIMB_ELEVATION, FlightColors.COLOR_GREEN);
-        drawReferenceMark(g, cx, cy, pitch, pxPerDeg, immersiveHalfHeight, DIVE_CAUTION_ELEVATION, FlightColors.COLOR_RED);
+        // Derived-constant reference brackets, drawn on top of the grid. These
+        // stay red/green (physics-derived signal colors), not structColor.
+        drawReferenceMark(g, cx, cy, pitch, pxPerDeg, immersiveHalfHeight, IDEAL_CLIMB_ELEVATION, FlightColors.COLOR_GREEN, rungGap);
+        drawReferenceMark(g, cx, cy, pitch, pxPerDeg, immersiveHalfHeight, DIVE_CAUTION_ELEVATION, FlightColors.COLOR_RED, rungGap);
     }
 
-    private static void drawHorizonLine(GuiGraphics g, int cx, int y, int alpha) {
-        int argb = FlightColors.withAlpha(COLOR_HORIZON, alpha);
-        hSeg(g, cx - HORIZON_HALF_WIDTH, cx - RUNG_GAP, y, argb);
-        hSeg(g, cx + RUNG_GAP, cx + HORIZON_HALF_WIDTH, y, argb);
+    private static void drawHorizonLine(GuiGraphics g, int cx, int y, int alpha, int rungGap, int horizonHalfWidth, int rgb) {
+        int argb = FlightColors.withAlpha(rgb, alpha);
+        hSeg(g, cx - horizonHalfWidth, cx - rungGap, y, argb);
+        hSeg(g, cx + rungGap, cx + horizonHalfWidth, y, argb);
         // Small downward end caps mark the true horizon ends.
-        vSeg(g, cx - HORIZON_HALF_WIDTH, y, y + 4, argb);
-        vSeg(g, cx + HORIZON_HALF_WIDTH, y, y + 4, argb);
+        vSeg(g, cx - horizonHalfWidth, y, y + 4, argb);
+        vSeg(g, cx + horizonHalfWidth, y, y + 4, argb);
     }
 
     /** A climb rung is solid with ticks pointing down toward the horizon; a dive rung is dashed with ticks up. */
-    private static void drawRung(GuiGraphics g, int cx, int y, boolean climb, int rgb, int alpha) {
+    private static void drawRung(GuiGraphics g, int cx, int y, boolean climb, int rgb, int alpha, int rungGap, int rungLength) {
         int argb = FlightColors.withAlpha(rgb, alpha);
-        int leftInner = cx - RUNG_GAP;
-        int rightInner = cx + RUNG_GAP;
-        int leftOuter = leftInner - RUNG_LENGTH;
-        int rightOuter = rightInner + RUNG_LENGTH;
+        int leftInner = cx - rungGap;
+        int rightInner = cx + rungGap;
+        int leftOuter = leftInner - rungLength;
+        int rightOuter = rightInner + rungLength;
 
         if (climb) {
             hSeg(g, leftOuter, leftInner, y, argb);
@@ -227,17 +269,18 @@ public final class FlightInstrumentOverlay {
         }
     }
 
-    private static void drawRungLabel(GuiGraphics g, Font font, int cx, int y, int elevationMagnitude, int rgb, int alpha) {
+    private static void drawRungLabel(GuiGraphics g, Font font, int cx, int y, int elevationMagnitude, int rgb,
+                                      int alpha, int rungGap, int rungLength) {
         String label = Integer.toString(elevationMagnitude);
         int textY = y - font.lineHeight / 2;
         int argb = FlightColors.withAlpha(rgb, alpha);
         // Labels just outside each rung's outer end.
-        g.drawString(font, label, cx - RUNG_GAP - RUNG_LENGTH - 4 - font.width(label), textY, argb, false);
-        g.drawString(font, label, cx + RUNG_GAP + RUNG_LENGTH + 4, textY, argb, false);
+        g.drawString(font, label, cx - rungGap - rungLength - 4 - font.width(label), textY, argb, false);
+        g.drawString(font, label, cx + rungGap + rungLength + 4, textY, argb, false);
     }
 
     private static void drawReferenceMark(GuiGraphics g, int cx, int cy, float pitch, double pxPerDeg,
-                                          int immersiveHalfHeight, float elevation, int rgb) {
+                                          int immersiveHalfHeight, float elevation, int rgb, int rungGap) {
         int y = cy - (int) Math.round((elevation + pitch) * pxPerDeg);
         int alpha = verticalFadeAlpha(Math.abs(y - cy), immersiveHalfHeight);
         if (alpha == 0) {
@@ -246,20 +289,22 @@ public final class FlightInstrumentOverlay {
         int argb = FlightColors.withAlpha(rgb, alpha);
         // A short colored bar bridging the center gap: an unmistakable target
         // line at a physics-derived elevation (ideal climb / dive caution).
-        hSeg(g, cx - RUNG_GAP + 2, cx + RUNG_GAP - 2, y, argb);
-        hSeg(g, cx - RUNG_GAP + 2, cx + RUNG_GAP - 2, y - 1, argb);
+        hSeg(g, cx - rungGap + 2, cx + rungGap - 2, y, argb);
+        hSeg(g, cx - rungGap + 2, cx + rungGap - 2, y - 1, argb);
     }
 
     // ── Boresight (fixed nose reference) ──────────────────────────────────
 
-    private static void drawBoresight(GuiGraphics g, int cx, int cy) {
+    private static void drawBoresight(GuiGraphics g, int cx, int cy, float scale, int rgb) {
         // Waterline symbol: two short wings flanking a center pip. The gap
         // between this (where the nose points) and the FPM (where you're
         // actually going) is the angle of attack, read directly off screen.
         // Fixed at center, so never subject to the immersive-height fade.
-        int argb = FlightColors.opaque(COLOR_BORESIGHT);
-        hSeg(g, cx - 18, cx - 6, cy, argb);
-        hSeg(g, cx + 6, cx + 18, cy, argb);
+        int inner = scaled(BASE_BORESIGHT_INNER, scale);
+        int outer = scaled(BASE_BORESIGHT_OUTER, scale);
+        int argb = FlightColors.opaque(rgb);
+        hSeg(g, cx - outer, cx - inner, cy, argb);
+        hSeg(g, cx + inner, cx + outer, cy, argb);
         g.fill(cx - 1, cy - 1, cx + 1, cy + 1, argb);
     }
 
@@ -267,7 +312,7 @@ public final class FlightInstrumentOverlay {
 
     private static void drawFlightPathMarker(GuiGraphics g, int cx, int cy, double aoa, float yaw,
                                              Vec3 velocity, double horizontalSpeed, double pxPerDeg,
-                                             int immersiveHalfHeight, int rgb) {
+                                             int immersiveHalfHeight, float scale, int rgb) {
         // Vertical: the FPM sits below/above the boresight by the AoA, since
         // its elevation minus the nose's equals (pitch − γ) = aoa.
         int fy = cy - (int) Math.round(aoa * pxPerDeg);
@@ -275,13 +320,14 @@ public final class FlightInstrumentOverlay {
         // Lateral: drift between where the nose points (yaw) and where the
         // velocity vector actually points. SIGN TO VERIFY (2): atan2(-vx, vz)
         // matches Minecraft's yaw convention (forward = (-sin y, cos y)).
+        int horizonHalfWidth = scaled(BASE_HORIZON_HALF_WIDTH, scale);
         int fx = cx;
         if (horizontalSpeed > 0.05) {
             double velocityYaw = Math.toDegrees(Math.atan2(-velocity.x, velocity.z));
             double drift = Mth.wrapDegrees(velocityYaw - yaw);
             fx = cx + (int) Math.round(drift * pxPerDeg);
         }
-        fx = Mth.clamp(fx, cx - HORIZON_HALF_WIDTH, cx + HORIZON_HALF_WIDTH);
+        fx = Mth.clamp(fx, cx - horizonHalfWidth, cx + horizonHalfWidth);
         fy = Mth.clamp(fy, cy - immersiveHalfHeight, cy + immersiveHalfHeight);
 
         int alpha = verticalFadeAlpha(Math.abs(fy - cy), immersiveHalfHeight);
@@ -290,34 +336,38 @@ public final class FlightInstrumentOverlay {
         }
         int argb = FlightColors.withAlpha(rgb, alpha);
 
-        int r = 4;
+        int r = scaled(BASE_FPM_RADIUS, scale);
+        int wing = scaled(BASE_FPM_WING, scale);
+        int stub = scaled(BASE_FPM_STUB, scale);
         // Ring (square outline approximating the FPM circle).
         hSeg(g, fx - r, fx + r, fy - r, argb);
         hSeg(g, fx - r, fx + r, fy + r, argb);
         vSeg(g, fx - r, fy - r, fy + r, argb);
         vSeg(g, fx + r, fy - r, fy + r, argb);
         // Wings and top stub.
-        hSeg(g, fx - r - 8, fx - r, fy, argb);
-        hSeg(g, fx + r, fx + r + 8, fy, argb);
-        vSeg(g, fx, fy - r - 6, fy - r, argb);
+        hSeg(g, fx - r - wing, fx - r, fy, argb);
+        hSeg(g, fx + r, fx + r + wing, fy, argb);
+        vSeg(g, fx, fy - r - stub, fy - r, argb);
     }
 
     // ── Angle-of-attack indexer ───────────────────────────────────────────
 
     private static void drawAoaIndicator(GuiGraphics g, Font font, int cx, int cy, float pitch, double gamma,
-                                         double horizontalSpeed, int rgb) {
-        int ax = cx - AOA_TAPE_OFFSET_X;
-        int top = cy - AOA_TAPE_HALF_HEIGHT;
-        int bottom = cy + AOA_TAPE_HALF_HEIGHT;
-        float pxPerDeg = AOA_TAPE_HALF_HEIGHT / AOA_DISPLAY_SPAN;
+                                         double horizontalSpeed, float scale, int structColor, int stateColor) {
+        int offsetX = scaled(BASE_AOA_TAPE_OFFSET_X, scale);
+        int halfHeight = scaled(BASE_AOA_TAPE_HALF_HEIGHT, scale);
+        int ax = cx - offsetX;
+        int top = cy - halfHeight;
+        int bottom = cy + halfHeight;
+        float pxPerDeg = halfHeight / AOA_DISPLAY_SPAN;
 
         // Vertical scale.
-        int ladderColor = FlightColors.opaque(COLOR_LADDER);
-        vSeg(g, ax, top, bottom, ladderColor);
+        int structArgb = FlightColors.opaque(structColor);
+        vSeg(g, ax, top, bottom, structArgb);
         for (int tick = -15; tick <= 15; tick += 5) {
             int ty = cy - Math.round(tick * pxPerDeg);
-            int len = tick == 0 ? 7 : 4; // emphasize the 0 datum (nose aligned with velocity)
-            hSeg(g, ax - len, ax, ty, ladderColor);
+            int len = scaled(tick == 0 ? 7 : 4, scale); // emphasize the 0 datum (nose aligned with velocity)
+            hSeg(g, ax - len, ax, ty, structArgb);
         }
 
         // Displayed AoA. SIGN TO VERIFY (3): shown in the aviation-intuitive
@@ -326,14 +376,17 @@ public final class FlightInstrumentOverlay {
         // caret rides up for higher displayed AoA.
         double displayAoa = gamma - pitch;
         int caretY = cy - Math.round((float) Mth.clamp(displayAoa, -AOA_DISPLAY_SPAN, AOA_DISPLAY_SPAN) * pxPerDeg);
-        int caretColor = FlightColors.opaque(rgb);
+        int caretColor = FlightColors.opaque(stateColor);
+        int caretSize = scaled(5, scale);
         // Left-pointing caret whose apex touches the tape at the current AoA.
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < caretSize; i++) {
             g.fill(ax + 2 + i, caretY - i, ax + 3 + i, caretY + i + 1, caretColor);
         }
 
-        // Numeric readout above the tape.
-        String text = String.format("AoA %.0f°", displayAoa);
+        // Numeric readout above the tape — bare degree value, not "AoA 10°":
+        // a shorter string keeps its left-extending bounds well clear of the
+        // airspeed tape regardless of font metrics (see BASE_AOA_TAPE_OFFSET_X).
+        String text = String.format("%.0f°", displayAoa);
         g.drawString(font, text, ax - font.width(text) + 7, top - font.lineHeight - 2, caretColor, false);
 
         // Stall flag, grounded in the derived airspeed floor (issue #9) rather
@@ -347,38 +400,39 @@ public final class FlightInstrumentOverlay {
 
     // ── Bearing tape (top) ─────────────────────────────────────────────────
 
-    private static void drawBearingTape(GuiGraphics g, Font font, int cx, float yaw) {
+    private static void drawBearingTape(GuiGraphics g, Font font, int cx, float yaw, float scale, int structColor) {
         // Compass heading, 0 = north: Minecraft yaw 0 is south, 180/-180 is
         // north, increasing clockwise (west at +90) — so heading = yaw + 180,
         // wrapped positive.
         float heading = Mth.positiveModulo(yaw + 180f, 360f);
-        int y = BEARING_TAPE_Y;
-        int ladderColor = FlightColors.opaque(COLOR_LADDER);
+        int y = scaled(BASE_BEARING_TAPE_Y, scale);
+        int halfWidth = scaled(BASE_BEARING_TAPE_HALF_WIDTH, scale);
+        double pxPerDegree = BASE_BEARING_PX_PER_DEGREE * scale;
+        int structArgb = FlightColors.opaque(structColor);
 
-        int windowDegrees = (int) Math.ceil(BEARING_TAPE_HALF_WIDTH / BEARING_PX_PER_DEGREE) + (int) BEARING_STEP;
+        int windowDegrees = (int) Math.ceil(halfWidth / pxPerDegree) + (int) BEARING_STEP;
         double firstTick = Math.floor((heading - windowDegrees) / BEARING_STEP) * BEARING_STEP;
         for (double tick = firstTick; tick <= heading + windowDegrees; tick += BEARING_STEP) {
             float delta = Mth.wrapDegrees((float) (tick - heading));
-            int x = cx + Math.round(delta * (float) BEARING_PX_PER_DEGREE);
-            if (Math.abs(x - cx) > BEARING_TAPE_HALF_WIDTH) {
+            int x = cx + Math.round(delta * (float) pxPerDegree);
+            if (Math.abs(x - cx) > halfWidth) {
                 continue;
             }
 
             int wrapped = (int) (((Math.round(tick) % 360) + 360) % 360);
             String label = cardinalOrDegrees(wrapped);
-            vSeg(g, x, y, y + 5, ladderColor);
-            g.drawString(font, label, x - font.width(label) / 2, y + 7, ladderColor, false);
+            vSeg(g, x, y, y + 5, structArgb);
+            g.drawString(font, label, x - font.width(label) / 2, y + 7, structArgb, false);
         }
 
-        hSeg(g, cx - BEARING_TAPE_HALF_WIDTH, cx + BEARING_TAPE_HALF_WIDTH, y, ladderColor);
+        hSeg(g, cx - halfWidth, cx + halfWidth, y, structArgb);
         // Fixed index caret marking "straight ahead" at center.
-        int caret = FlightColors.opaque(COLOR_BORESIGHT);
         for (int i = 0; i < 4; i++) {
-            hSeg(g, cx - i, cx + i, y - 2 - i, caret);
+            hSeg(g, cx - i, cx + i, y - 2 - i, structArgb);
         }
 
         String readout = String.format("%03d", Math.round(heading) % 360);
-        drawValueBox(g, font, cx, y - 15, readout, COLOR_BORESIGHT);
+        drawValueBox(g, font, cx, y - 15, readout, structColor);
     }
 
     private static String cardinalOrDegrees(int wrappedHeading) {
@@ -394,27 +448,33 @@ public final class FlightInstrumentOverlay {
     // ── Airspeed / altitude tapes ────────────────────────────────────────
 
     private static void drawAirspeedTape(GuiGraphics g, Font font, int cx, int cy, double airspeedBlocksPerSecond,
-                                         int immersiveHalfHeight) {
-        int spineX = cx - AIRSPEED_TAPE_OFFSET_X;
-        drawVerticalTape(g, font, spineX, cy, airspeedBlocksPerSecond, AIRSPEED_STEP, AIRSPEED_PX_PER_UNIT,
-                immersiveHalfHeight, false, false, COLOR_LADDER);
+                                         int immersiveHalfHeight, float scale, int structColor) {
+        int spineX = cx - scaled(BASE_AIRSPEED_TAPE_OFFSET_X, scale);
+        double pxPerUnit = BASE_AIRSPEED_PX_PER_UNIT * scale;
+        drawVerticalTape(g, font, spineX, cy, airspeedBlocksPerSecond, AIRSPEED_STEP, pxPerUnit,
+                immersiveHalfHeight, false, false, scale, structColor);
         String readout = Long.toString(Math.round(airspeedBlocksPerSecond));
-        drawValueBox(g, font, spineX, cy, readout, COLOR_BORESIGHT);
+        drawValueBox(g, font, spineX, cy, readout, structColor);
     }
 
     private static void drawAltitudeTape(GuiGraphics g, Font font, LocalPlayer player, int cx, int cy,
-                                         int immersiveHalfHeight) {
-        int spineX = cx + ALTITUDE_TAPE_OFFSET_X;
+                                         int immersiveHalfHeight, float scale, int structColor) {
+        int spineX = cx + scaled(BASE_ALTITUDE_TAPE_OFFSET_X, scale);
+        double pxPerUnit = BASE_ALTITUDE_PX_PER_UNIT * scale;
         double altitude = FlightMath.barometricAltitude(player);
-        drawVerticalTape(g, font, spineX, cy, altitude, ALTITUDE_STEP, ALTITUDE_PX_PER_UNIT,
-                immersiveHalfHeight, true, true, COLOR_LADDER);
+        drawVerticalTape(g, font, spineX, cy, altitude, ALTITUDE_STEP, pxPerUnit,
+                immersiveHalfHeight, true, true, scale, structColor);
 
         String baltReadout = Long.toString(Math.round(altitude));
-        drawValueBox(g, font, spineX, cy, baltReadout, COLOR_BORESIGHT);
+        drawValueBox(g, font, spineX, cy, baltReadout, structColor);
 
+        // RALT sits at the bottom of the immersive HUD extent, not directly
+        // under BALT (see class doc) — a fixed instrument, clear of BALT's
+        // own scrolling tick labels.
         FlightMath.GroundReading ralt = FlightMath.radarAltitude(player);
         String raltReadout = ralt.raycastHit() ? "R " + Math.round(ralt.distance()) : "R ---";
-        drawValueBox(g, font, spineX, cy + RALT_BOX_Y_OFFSET, raltReadout, COLOR_LADDER);
+        int raltY = cy + immersiveHalfHeight - scaled(BASE_RALT_BOTTOM_MARGIN, scale);
+        drawValueBox(g, font, spineX, raltY, raltReadout, structColor);
     }
 
     /**
@@ -430,11 +490,11 @@ public final class FlightInstrumentOverlay {
      */
     private static void drawVerticalTape(GuiGraphics g, Font font, int spineX, int cy, double currentValue,
                                          double step, double pxPerUnit, int immersiveHalfHeight,
-                                         boolean labelsToRight, boolean allowNegative, int rgb) {
+                                         boolean labelsToRight, boolean allowNegative, float scale, int rgb) {
         int windowUnits = (int) Math.ceil(immersiveHalfHeight / pxPerUnit) + (int) step;
         double firstTick = Math.floor((currentValue - windowUnits) / step) * step;
-        int tickLen = 6;
-        int centerGapPx = 10;
+        int tickLen = scaled(6, scale);
+        int centerGapPx = scaled(10, scale);
 
         for (double tickValue = firstTick; tickValue <= currentValue + windowUnits; tickValue += step) {
             if (!allowNegative && tickValue < 0) {
@@ -488,6 +548,11 @@ public final class FlightInstrumentOverlay {
 
     // ── Low-level primitives ──────────────────────────────────────────────
 
+    /** Rounds a base (scale-1.0) pixel constant by the configured instrument scale. */
+    private static int scaled(int base, float scale) {
+        return Math.round(base * scale);
+    }
+
     /**
      * Alpha (0-255) for a vertically-tracking element at distance {@code dy}
      * from center against the immersive-HUD-height fade: full opacity inside
@@ -506,14 +571,21 @@ public final class FlightInstrumentOverlay {
         return Math.round(255 * FlightColors.clamp01(t));
     }
 
-    /** 1px horizontal segment [x1, x2] at row y, in a pre-composed ARGB color (see class doc). */
+    /**
+     * 1px horizontal segment [x1, x2] at row y, in a pre-composed ARGB color
+     * (see class doc). Both endpoints inclusive — {@code GuiGraphics#fill}'s
+     * upper x bound is exclusive, so this adds 1 to reach x2 itself; without
+     * it, closed 4-sided shapes built from hSeg+vSeg (the FPM ring,
+     * drawValueBox's border) drop their bottom-right corner pixel, since
+     * neither the bottom hSeg nor the right vSeg's exclusive ends cover it.
+     */
     private static void hSeg(GuiGraphics g, int x1, int x2, int y, int argb) {
-        g.fill(x1, y, x2, y + 1, argb);
+        g.fill(x1, y, x2 + 1, y + 1, argb);
     }
 
-    /** 1px vertical segment [y1, y2] at column x, in a pre-composed ARGB color. */
+    /** 1px vertical segment [y1, y2] at column x, in a pre-composed ARGB color. Both endpoints inclusive — see hSeg. */
     private static void vSeg(GuiGraphics g, int x, int y1, int y2, int argb) {
-        g.fill(x, y1, x + 1, y2, argb);
+        g.fill(x, y1, x + 1, y2 + 1, argb);
     }
 
     /** Dashed horizontal segment (dive rungs) — 4px on, 3px off. */

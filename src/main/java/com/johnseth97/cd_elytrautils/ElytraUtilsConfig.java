@@ -34,12 +34,30 @@ public class ElytraUtilsConfig implements BConfig {
     public boolean showFlightTimeLine = true;
 
     // Fighter-jet attitude display (issue #10): a screen-centered pitch
-    // ladder, flight path marker, and AoA indexer, shown only while actually
-    // fall-flying. Gated by showElytraOverlay like everything else, plus its
-    // own master toggle and per-element toggles. pixelsPerDegree scales the
-    // whole display (how far one degree of pitch moves the ladder on screen).
+    // ladder, flight path marker, AoA indexer, bearing tape, and airspeed/
+    // altitude tapes, shown only while actually fall-flying. Deliberately
+    // has its own master toggle independent of showElytraOverlay (the legacy
+    // text HUD row) — see FlightInstrumentOverlay's render() gate — so either
+    // display can run without the other.
     public boolean showFlightInstruments = true;
-    public double flightInstrumentPixelsPerDegree = 4.0;
+
+    // Uniform multiplier applied to every layout constant in
+    // FlightInstrumentOverlay (ladder rung spacing, tape offsets, pixels per
+    // degree/unit, marker sizes, ...) so the whole display grows or shrinks
+    // as one unit rather than each element scaling independently. 1.0 matches
+    // the original fixed layout.
+    public double flightInstrumentScale = 1.0;
+
+    // RGB only, same convention as masterCautionColor (alpha forced opaque at
+    // render time). Applied uniformly to the display's structural elements
+    // (ladder, horizon, boresight, tape lines/labels/boxes, bearing tape) —
+    // real HUD combiner glass renders everything in one phosphor color, so
+    // unifying these into one user-configurable color is more authentic, not
+    // less. The physics-derived signal colors (climb/dive gradient, STALL,
+    // reference marks) stay independent of this: they carry safety meaning
+    // (green/orange/red), not just aesthetics, so they aren't user-overridden.
+    public int flightInstrumentColor = 0xFFFF55;
+
     public boolean showPitchLadder = true;
     public boolean showFlightPathMarker = true;
     public boolean showAoaIndicator = true;
@@ -51,6 +69,8 @@ public class ElytraUtilsConfig implements BConfig {
     // the vertically-tracking instruments (pitch ladder, airspeed/altitude
     // tapes) are visible through. They fade out approaching this limit rather
     // than hard-clipping or tracking the full screen height, so the display
-    // reads like a real HUD's limited glass extent.
+    // reads like a real HUD's limited glass extent. Independent of
+    // flightInstrumentScale — this is the size of the simulated glass, not a
+    // zoom level for the symbols drawn on it.
     public double immersiveHudHeightPixels = 120.0;
 }

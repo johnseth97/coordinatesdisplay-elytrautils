@@ -106,10 +106,16 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
                 val -> config.showFlightInstruments = val));
         addConfigLine(new BDoubleSlider(
                 "cd_elytrautils.config.flight_instrument_scale",
-                2.0, 12.0,
-                config.flightInstrumentPixelsPerDegree,
-                1,
-                val -> config.flightInstrumentPixelsPerDegree = val));
+                0.5, 2.0,
+                config.flightInstrumentScale,
+                2,
+                val -> config.flightInstrumentScale = val));
+        addConfigLine(new BColorPickerButton(
+                "cd_elytrautils.config.flight_instrument_color",
+                this,
+                false,
+                config.flightInstrumentColor,
+                val -> config.flightInstrumentColor = val));
         addConfigLine(new BBooleanButton(
                 "cd_elytrautils.config.show_pitch_ladder",
                 config.showPitchLadder,
