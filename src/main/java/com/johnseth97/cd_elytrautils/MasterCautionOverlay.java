@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.phys.Vec3;
 
 /**
  * Screen-centered warning shown when the elytra will break (durability)
@@ -45,22 +44,26 @@ public final class MasterCautionOverlay {
             return;
         }
 
-        Vec3 velocity = player.getDeltaMovement();
-        double horizontalSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-        double vy = velocity.y;
+        double vy = player.getDeltaMovement().y;
 
-        double groundDistance = FlightMath.glideRangeBlocks(player, horizontalSpeed, vy);
-        double durabilityDistance = FlightMath.durabilityLimitedBlocks(player, horizontalSpeed);
+        // Bingo-fuel comparison: ticks until the ground vs. ticks until the
+        // elytra could break. Neither depends on horizontal speed, so a
+        // transient rocket-boost speed spike can't corrupt this the way
+        // multiplying a long time window by instantaneous speed did before
+        // (see FlightMath's class doc).
+        double ticksToGround = FlightMath.ticksToGround(player, vy);
+        double ticksUntilDurabilityFloor = FlightMath.durabilityLimitedTicks(player);
 
         // Throttled diagnostic so we can confirm the actual computed values
         // from a real flight instead of guessing — remove once confirmed working.
         if (player.tickCount % 40 == 0) {
             CoordinatesDisplayElytraUtils.LOGGER.info(
-                    "[master-caution] fallFlying={} groundDistance={} durabilityDistance={} willTrigger={}",
-                    player.isFallFlying(), groundDistance, durabilityDistance, durabilityDistance >= 0.0 && groundDistance >= 0.0 && durabilityDistance < groundDistance);
+                    "[master-caution] fallFlying={} ticksToGround={} ticksUntilDurabilityFloor={} willTrigger={}",
+                    player.isFallFlying(), ticksToGround, ticksUntilDurabilityFloor,
+                    ticksUntilDurabilityFloor >= 0.0 && ticksToGround >= 0.0 && ticksUntilDurabilityFloor < ticksToGround);
         }
 
-        if (groundDistance < 0.0 || durabilityDistance < 0.0 || durabilityDistance >= groundDistance) {
+        if (ticksToGround < 0.0 || ticksUntilDurabilityFloor < 0.0 || ticksUntilDurabilityFloor >= ticksToGround) {
             return;
         }
 
