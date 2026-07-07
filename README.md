@@ -41,6 +41,28 @@ element are independently configurable or toggleable, and the display runs
 independently of the text HUD below — turn either one off without affecting
 the other.
 
+The instruments can also be held back until you're actually up at altitude:
+**Min Radar Altitude** hides them below a configured raycast (radar) AGL
+height, so they don't clutter the screen right at launch or landing. With
+**Sticky Enable** on, once you've climbed above that height during a flight
+the display stays on even if you dip back below it — e.g. buzzing the
+treetops after already climbing out — until you land and take off again.
+
+## Hotkeys
+
+Two hotkeys, unbound by default (bind them in **Options → Controls →
+ElytraUtils**):
+
+- **Toggle Immersive HUD** — flips Show Flight Instruments.
+- **Toggle Text HUD** — flips Show Elytra Overlay.
+
+Both just flip the same setting the config screen controls — they don't
+change *when* a display is allowed to show (still gated by fall-flying, or
+elytra-equipped-with-rockets for the text HUD). If you press one while that
+condition isn't currently met (so nothing on screen would otherwise change),
+a fading center-screen message confirms it anyway: green "... Enabled" or red
+"... Disabled", reflecting whichever way it actually just toggled.
+
 ## Text HUD row
 
 While gliding — or while standing on the ground with an elytra equipped and
@@ -111,21 +133,56 @@ speed spikes.
 ## Configuration
 
 Configure in-game via [ModMenu](https://modrinth.com/mod/modmenu) (optional), or
-edit `config/coordinatesdisplay_elytrautils.json`.
+edit `config/coordinatesdisplay_elytrautils.json`. The in-game screen groups
+settings under headings matching the sections below.
+
+### General
 
 | Setting | Default | Description |
 |---|---|---|
 | Show Elytra Overlay | on | Master toggle for the text HUD row (and Master Caution) |
+
+### Master Caution
+
+| Setting | Default | Description |
+|---|---|---|
 | Caution Threshold | 100 | Blocks of early-warning lead time before the death point; **0 = Master Caution off** |
 | Master Caution Color | red | Color of the warning text |
+
+### Altimeter
+
+| Setting | Default | Description |
+|---|---|---|
 | Altimeter Mode | Auto | `Radar` (raycast terrain), `Barometric` (fixed reference), or `Auto` (radar low, barometric high) |
 | Switchover Height | 100 | In Auto mode, the AGL height to switch radar→barometric |
-| Barometric = Sea Level | on | Use the dimension's sea level as the barometric reference |
+| Barometric = Sea Level | on | Use a dimension-aware reference instead of a fixed Y — see below |
 | Barometric Y | 63 | Custom reference height when the above is off |
+
+The dimension-aware reference isn't just a flat sea level everywhere:
+
+- **Overworld** — vanilla sea level (63).
+- **Nether** — the lava sea's level while below the bedrock ceiling; once
+  you're flying above the roof (Y > 127), the reference switches to the roof
+  itself, since the lava far below is irrelevant up there.
+- **End** — there's no meaningful "sea level" (the world-gen value is just a
+  noise-shaping parameter, not a surface), so this tracks the height of
+  whichever island you were last actually over, rather than a fixed number.
+
+### HUD Lines
+
+| Setting | Default | Description |
+|---|---|---|
 | Show Impact Line | on | Toggle the impact-damage row |
 | Show Range Line | on | Toggle the range row |
 | Show Flight Time Line | on | Toggle the time-to-ground row |
+
+### Flight Instruments
+
+| Setting | Default | Description |
+|---|---|---|
 | Show Flight Instruments | on | Master toggle for the fighter-jet HUD (independent of Show Elytra Overlay) |
+| Min Radar Altitude | 0 | Radar (raycast) AGL height below which the instruments stay hidden even while fall-flying; 0 = no minimum |
+| Sticky Enable | off | Once above Min Radar Altitude during a flight, keep showing even if you dip back below it until you land |
 | Instrument Scale | 1.0 | Uniform size multiplier for the whole instrument display |
 | Instrument Color | yellow | Color (with alpha/transparency) for the display's structural elements |
 | Show Pitch Ladder | on | Toggle the horizon-referenced climb/dive ladder |
