@@ -41,6 +41,26 @@ public class ElytraUtilsConfig implements BConfig {
     // display can run without the other.
     public boolean showFlightInstruments = true;
 
+    // Radar (raycast AGL, not barometric) altitude below which the
+    // instruments stay hidden even while fall-flying — lets a user suppress
+    // the display right at launch/landing, close to the ground, and only
+    // have it appear once actually up at altitude. 0 (default) preserves the
+    // old behavior of showing immediately on fall-flying, no minimum. See
+    // FlightInstrumentOverlay's render() gate — a raycast miss (nothing
+    // within radar range) counts as "above the minimum" regardless of this
+    // value, since there's no ground close enough to be a landing.
+    public double flightInstrumentMinRadarAltitude = 0.0;
+
+    // Once the player has climbed above flightInstrumentMinRadarAltitude
+    // during the current fall-flying session, keep the instruments showing
+    // even if they later dip back below it — e.g. buzzing the treetops after
+    // having already climbed out. Latch resets the next time fall-flying
+    // stops (landing), so it never leaks into the next flight. See
+    // FlightInstrumentOverlay's render() gate. Off by default: matches the
+    // strict "hidden below the minimum, always" behavior
+    // flightInstrumentMinRadarAltitude had before this existed.
+    public boolean flightInstrumentMinRadarAltitudeSticky = false;
+
     // Uniform multiplier applied to every layout constant in
     // FlightInstrumentOverlay (ladder rung spacing, tape offsets, pixels per
     // degree/unit, marker sizes, ...) so the whole display grows or shrinks

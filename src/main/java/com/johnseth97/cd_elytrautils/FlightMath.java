@@ -33,6 +33,22 @@ public final class FlightMath {
 
     private static final double MAX_RAYCAST_DISTANCE = 320.0;
 
+    // Bedrock ceiling of the Nether (DimensionType "the_nether": min_y 0,
+    // logical_height 128), above which players can build/fly on the "roof."
+    // Up there the lava sea 100+ blocks below is irrelevant to a barometric
+    // reference — the roof itself is the meaningful "ground" estimate.
+    private static final double NETHER_ROOF_Y = 127.0;
+
+    // The End's world-gen sea_level (0) is a noise-shaping parameter, not a
+    // surface height — the islands themselves float far above it at wildly
+    // varying altitudes. Rather than hardcode a guess, this remembers the Y
+    // of the last successful ground raycast while in the End, so the
+    // barometric reference tracks whichever island the player was last
+    // over. Reset to NaN whenever referenceY runs for a non-End dimension,
+    // so a stale island height from a previous End visit can't leak into
+    // the next one.
+    private static double lastEndGroundY = Double.NaN;
+
     // Elytra durability rolls once every 20 ticks of continuous fall-flying
     // (LivingEntity#updateFallFlying). Unbreaking only reduces the *chance*
     // a roll costs a point — it can never let more than 1 point break per
@@ -83,6 +99,9 @@ public final class FlightMath {
         ClipContext context = new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player);
         BlockHitResult hit = level.clip(context);
         if (hit.getType() != HitResult.Type.MISS) {
+            if (level.dimension() == Level.END) {
+                lastEndGroundY = hit.getLocation().y;
+            }
             return new GroundReading(from.y - hit.getLocation().y, true);
         }
         return new GroundReading(barometricDistance(player, config), false);
@@ -92,8 +111,36 @@ public final class FlightMath {
         return Math.max(0.0, player.position().y - referenceY(player, config));
     }
 
+    /**
+     * The fixed reference Y for barometric/AUTO-fallback readings. When
+     * {@code barometricUseSeaLevel} is off, this is just the user's custom
+     * Y. Otherwise it's dimension-aware rather than a blind
+     * {@code getSeaLevel()} call, since that returns a technically-correct
+     * but practically-useless value in two dimensions:
+     * <ul>
+     *   <li>Nether — {@code getSeaLevel()} (32) tracks the lava sea, which
+     *       is right while below the bedrock ceiling, but once the player is
+     *       flying above the {@link #NETHER_ROOF_Y roof}, the lava is
+     *       irrelevant and the roof itself is the useful reference.</li>
+     *   <li>End — {@code getSeaLevel()} (0) is a world-gen parameter, not a
+     *       surface height; see {@link #lastEndGroundY}.</li>
+     * </ul>
+     */
     private static double referenceY(LocalPlayer player, ElytraUtilsConfig config) {
-        return config.barometricUseSeaLevel ? player.level().getSeaLevel() : config.customBarometricY;
+        if (!config.barometricUseSeaLevel) {
+            return config.customBarometricY;
+        }
+
+        Level level = player.level();
+        if (level.dimension() == Level.NETHER) {
+            return player.position().y > NETHER_ROOF_Y ? NETHER_ROOF_Y : level.getSeaLevel();
+        }
+        if (level.dimension() == Level.END) {
+            return Double.isNaN(lastEndGroundY) ? level.getSeaLevel() : lastEndGroundY;
+        }
+
+        lastEndGroundY = Double.NaN;
+        return level.getSeaLevel();
     }
 
     /**
@@ -120,6 +167,23 @@ public final class FlightMath {
      */
     public static GroundReading radarAltitude(LocalPlayer player) {
         return raycastGroundDistance(player, CoordinatesDisplayElytraUtils.getConfig());
+    }
+
+    /**
+     * True while actually fall-flying, or "ready to" — elytra equipped and a
+     * firework rocket in either hand but not airborne yet. Shared by
+     * {@code HudMixin}'s text-row visibility gate and {@code KeyBindings}'
+     * toggle-hotkey feedback, so both agree on what "the text HUD would
+     * currently be showing something" means.
+     */
+    public static boolean elytraFlightActiveOrReady(LocalPlayer player) {
+        if (player.isFallFlying()) {
+            return true;
+        }
+        boolean hasElytraEquipped = player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA);
+        boolean holdingRockets = player.getMainHandItem().is(Items.FIREWORK_ROCKET)
+                || player.getOffhandItem().is(Items.FIREWORK_ROCKET);
+        return hasElytraEquipped && holdingRockets;
     }
 
     /**

@@ -81,6 +81,12 @@ public final class FlightInstrumentOverlay {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(
             CoordinatesDisplayElytraUtils.MOD_ID, "flight_instruments");
 
+    // "Sticky" latch for flightInstrumentMinRadarAltitudeSticky (see render()):
+    // set once the player climbs above the minimum during the current
+    // fall-flying session, cleared as soon as fall-flying stops so it can't
+    // leak into the next flight.
+    private static boolean minAltitudeLatched = false;
+
     // Ladder geometry (screen pixels at scale 1.0). The rung gap keeps the
     // middle clear so the boresight and FPM read cleanly against the ladder.
     private static final int BASE_RUNG_GAP = 26;        // half-width of the clear center gap
@@ -158,7 +164,21 @@ public final class FlightInstrumentOverlay {
         ElytraUtilsConfig config = CoordinatesDisplayElytraUtils.getConfig();
         // Deliberately independent of config.showElytraOverlay — see class doc.
         if (player == null || !config.showFlightInstruments || !player.isFallFlying()) {
+            minAltitudeLatched = false;
             return;
+        }
+
+        // Radar (raycast), not barometric — a raycast miss means nothing's
+        // within range below, which is always "above the minimum" regardless
+        // of config.flightInstrumentMinRadarAltitude.
+        FlightMath.GroundReading radar = FlightMath.radarAltitude(player);
+        boolean belowMinimum = radar.raycastHit() && radar.distance() < config.flightInstrumentMinRadarAltitude;
+        if (belowMinimum) {
+            if (!(config.flightInstrumentMinRadarAltitudeSticky && minAltitudeLatched)) {
+                return;
+            }
+        } else if (config.flightInstrumentMinRadarAltitudeSticky) {
+            minAltitudeLatched = true;
         }
 
         float pitch = player.getXRot(); // + = nose down

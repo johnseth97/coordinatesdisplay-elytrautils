@@ -5,7 +5,9 @@ import dev.boxadactle.boxlib.gui.config.widget.BSpacingEntry;
 import dev.boxadactle.boxlib.gui.config.widget.button.BBooleanButton;
 import dev.boxadactle.boxlib.gui.config.widget.button.BColorPickerButton;
 import dev.boxadactle.boxlib.gui.config.widget.button.BEnumButton;
+import dev.boxadactle.boxlib.gui.config.widget.label.BLabel;
 import dev.boxadactle.boxlib.gui.config.widget.slider.BDoubleSlider;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
@@ -29,6 +31,7 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
     protected void addOptions() {
         ElytraUtilsConfig config = CoordinatesDisplayElytraUtils.getConfig();
 
+        addHeading("cd_elytrautils.config.heading_general");
         addConfigLine(new BBooleanButton(
                 "cd_elytrautils.config.show_overlay",
                 config.showElytraOverlay,
@@ -36,7 +39,7 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
 
         addConfigLine(new BSpacingEntry());
 
-        // Master Caution
+        addHeading("cd_elytrautils.config.heading_master_caution");
         addConfigLine(new BDoubleSlider(
                 "cd_elytrautils.config.master_caution_threshold",
                 0.0, 500.0,
@@ -57,7 +60,7 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
 
         addConfigLine(new BSpacingEntry());
 
-        // Altimeter
+        addHeading("cd_elytrautils.config.heading_altimeter");
         addConfigLine(new BEnumButton<>(
                 "cd_elytrautils.config.altimeter_mode",
                 config.altimeterMode,
@@ -83,7 +86,7 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
 
         addConfigLine(new BSpacingEntry());
 
-        // HUD line modules
+        addHeading("cd_elytrautils.config.heading_hud_lines");
         addConfigLine(new BBooleanButton(
                 "cd_elytrautils.config.show_impact_line",
                 config.showImpactLine,
@@ -99,11 +102,21 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
 
         addConfigLine(new BSpacingEntry());
 
-        // Flight instruments (issue #10)
+        addHeading("cd_elytrautils.config.heading_flight_instruments");
         addConfigLine(new BBooleanButton(
                 "cd_elytrautils.config.show_flight_instruments",
                 config.showFlightInstruments,
                 val -> config.showFlightInstruments = val));
+        addConfigLine(new BDoubleSlider(
+                "cd_elytrautils.config.flight_instrument_min_radar_altitude",
+                0.0, 320.0,
+                config.flightInstrumentMinRadarAltitude,
+                0,
+                val -> config.flightInstrumentMinRadarAltitude = val));
+        addConfigLine(new BBooleanButton(
+                "cd_elytrautils.config.flight_instrument_min_radar_altitude_sticky",
+                config.flightInstrumentMinRadarAltitudeSticky,
+                val -> config.flightInstrumentMinRadarAltitudeSticky = val));
         addConfigLine(new BDoubleSlider(
                 "cd_elytrautils.config.flight_instrument_scale",
                 0.5, 2.0,
@@ -146,6 +159,11 @@ public class ElytraUtilsConfigScreen extends BOptionScreen {
                 config.immersiveHudHeightPixels,
                 0,
                 val -> config.immersiveHudHeightPixels = val));
+    }
+
+    /** Bold, non-interactive section header row (BLabel is inert — see BoxLib). */
+    private void addHeading(String translationKey) {
+        addConfigLine(new BLabel(Component.translatable(translationKey).withStyle(ChatFormatting.BOLD)));
     }
 
     @Override

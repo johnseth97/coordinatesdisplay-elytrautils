@@ -25,7 +25,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec3;
@@ -123,16 +122,8 @@ public abstract class HudMixin {
     };
 
     private static boolean shouldShowOverlay(LocalPlayer player) {
-        if (!CoordinatesDisplayElytraUtils.getConfig().showElytraOverlay) {
-            return false;
-        }
-        if (player.isFallFlying()) {
-            return true;
-        }
-        boolean hasElytraEquipped = player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA);
-        boolean holdingRockets = player.getMainHandItem().is(Items.FIREWORK_ROCKET)
-                || player.getOffhandItem().is(Items.FIREWORK_ROCKET);
-        return hasElytraEquipped && holdingRockets;
+        return CoordinatesDisplayElytraUtils.getConfig().showElytraOverlay
+                && FlightMath.elytraFlightActiveOrReady(player);
     }
 
     private static Component buildFlightLine(LocalPlayer player) {
